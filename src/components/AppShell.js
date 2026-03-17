@@ -73,7 +73,7 @@ export default function AppShell({ children }) {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <TopNav onQuickAdd={() => setQuickAddOpen(true)} />
-      <main className="pt-16 px-6 py-6 max-w-7xl mx-auto">
+      <main className="app-main">
         {children}
       </main>
       <QuickAdd

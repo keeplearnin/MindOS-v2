@@ -69,6 +69,16 @@ body {
 }
 .slide-down { animation: slideDown 0.2s ease-out; }
 
+/* ===== App Main Content ===== */
+.app-main {
+  padding-top: calc(56px + 1.5rem);
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  padding-bottom: 1.5rem;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
 /* ===== Top Navigation ===== */
 .topnav {
   position: fixed;
@@ -87,6 +97,14 @@ body {
   display: flex;
   align-items: center;
   padding: 0 1.25rem;
+}
+.topnav-desktop-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 1.5rem;
+  flex: 1;
+  overflow-x: auto;
 }
 .topnav-link {
   display: flex;
@@ -128,6 +146,131 @@ body {
 .quick-add-btn:hover {
   background: #2563eb;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Mobile hamburger button - hidden on desktop */
+.mobile-menu-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 45;
+}
+
+/* Mobile slide-out drawer */
+.mobile-menu-drawer {
+  display: none;
+  position: fixed;
+  top: 56px;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--bg-card);
+  z-index: 46;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  flex-direction: column;
+  overflow-y: auto;
+  animation: slideFromRight 0.2s ease-out;
+}
+.mobile-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.mobile-menu-link:active {
+  background: var(--bg-hover) !important;
+}
+
+@keyframes slideFromRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* Mobile bottom tab bar - hidden on desktop */
+.mobile-bottom-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  z-index: 40;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.mobile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  flex: 1;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mobile-tab:active { opacity: 0.7; }
+
+/* ===== Mobile Responsive ===== */
+@media (max-width: 768px) {
+  /* Main content */
+  .app-main {
+    padding: calc(56px + 1rem) 1rem 1rem;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 1rem);
+  }
+
+  /* Hide desktop nav links */
+  .topnav-desktop-links { display: none; }
+  .topnav-user-menu { display: none; }
+  .topnav-logo-text { display: none; }
+
+  /* Show mobile elements */
+  .mobile-menu-btn { display: flex; }
+  .mobile-menu-overlay { display: block; }
+  .mobile-menu-drawer { display: flex; }
+  .mobile-bottom-bar {
+    display: flex;
+    align-items: center;
+  }
+
+  /* Quick add: icon only on mobile */
+  .quick-add-btn-text { display: none; }
+  .quick-add-btn { padding: 0.5rem; border-radius: 50%; }
+
+  /* Quick add dialog - full width on mobile */
+  .quick-add-overlay { padding-top: 5vh; }
+  .quick-add-dialog { width: 95%; border-radius: 12px; }
+
+  /* Cards - less padding */
+  .card { padding: 1rem; border-radius: 10px; }
+
+  /* Tabs scroll on mobile */
+  .tab { padding: 0.4rem 0.75rem; font-size: 0.8125rem; white-space: nowrap; }
+
+  /* Modal full-width on mobile */
+  .modal { width: 95%; padding: 1.25rem; border-radius: 12px; }
+
+  /* Timer smaller */
+  .timer-display { font-size: 2.5rem; }
 }
 
 /* ===== Quick Add Dialog ===== */
