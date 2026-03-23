@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { getSupabase } from '@/lib/supabase-browser';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { BookOpen, ChevronLeft, ChevronRight, Star, Calendar, Check } from 'lucide-react';
+import VoiceMic from '@/components/VoiceMic';
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns';
 
 const MOODS = [
@@ -313,9 +314,16 @@ function JournalPage() {
       {/* Journal Sections */}
       {SECTIONS.map(section => (
         <div key={section.key} className="card mb-4">
-          <p className="text-sm font-medium mb-2" style={{ color: 'var(--text)' }}>
-            {section.icon} {section.title}
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+              {section.icon} {section.title}
+            </p>
+            <VoiceMic
+              onAppend={(t) => handleContentChange(section.key, (content[section.key] || '') + (content[section.key] ? ' ' : '') + t)}
+              mode="append"
+              size={14}
+            />
+          </div>
           <textarea
             className="input"
             rows={section.rows}

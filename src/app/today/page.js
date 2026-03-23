@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useTasks, useRoles, createTask } from '@/lib/hooks';
 import { fetchEvents } from '@/lib/calendar';
 import { Sun, Clock, Target, Calendar, Plus, Play, Pause, RotateCcw, Coffee } from 'lucide-react';
+import VoiceMic from '@/components/VoiceMic';
 import { format, isToday, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
 
 const QUOTES = [
@@ -478,7 +479,7 @@ function TodayPage() {
             Quick Capture
           </h2>
         </div>
-        <form onSubmit={handleQuickCapture} style={{ display: 'flex', gap: '0.75rem' }}>
+        <form onSubmit={handleQuickCapture} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <input
             className="input"
             type="text"
@@ -492,6 +493,7 @@ function TodayPage() {
               fontSize: '0.875rem',
             }}
           />
+          <VoiceMic onResult={(t) => setQuickText(t)} size={16} />
           <button
             className="btn"
             type="submit"

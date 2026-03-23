@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Zap, Calendar, Flag, Hash, ArrowRight, Mic, MicOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Zap, Calendar, Flag, Hash, ArrowRight } from 'lucide-react';
+import VoiceMic from './VoiceMic';
 import { createTask } from '@/lib/hooks';
 
 export default function QuickAdd({ open, onClose, onCreated }) {
@@ -11,67 +12,7 @@ export default function QuickAdd({ open, onClose, onCreated }) {
   const [dueDate, setDueDate] = useState('');
   const [showMore, setShowMore] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
   const inputRef = useRef(null);
-  const recognitionRef = useRef(null);
-
-  // Check for Speech API support on mount
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    setSpeechSupported(!!SpeechRecognition);
-  }, []);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.abort();
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-  }, []);
-
-  const toggleVoiceInput = useCallback(() => {
-    if (isListening) {
-      stopListening();
-      return;
-    }
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = true;
-    recognition.lang = 'en-US';
-
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
-        .join('');
-      setTitle(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Speech recognition error:', event.error);
-      setIsListening(false);
-      recognitionRef.current = null;
-    };
-
-    recognition.onend = () => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      inputRef.current?.focus();
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isListening, stopListening]);
-
-  // Clean up recognition on unmount
-  useEffect(() => {
-    return () => stopListening();
-  }, [stopListening]);
 
   useEffect(() => {
     if (open) {
@@ -80,10 +21,9 @@ export default function QuickAdd({ open, onClose, onCreated }) {
       setQuadrant(2);
       setDueDate('');
       setShowMore(false);
-      stopListening();
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [open, stopListening]);
+  }, [open]);
 
   // Keyboard shortcut: Cmd+K to open
   useEffect(() => {
@@ -129,13 +69,6 @@ export default function QuickAdd({ open, onClose, onCreated }) {
   ];
 
   return (
-    <>
-    <style>{`
-      @keyframes voice-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.4; }
-      }
-    `}</style>
     <div className="quick-add-overlay" onClick={onClose}>
       <div className="quick-add-dialog animate-in" onClick={e => e.stopPropagation()}>
         <form onSubmit={handleSubmit}>
@@ -151,39 +84,7 @@ export default function QuickAdd({ open, onClose, onCreated }) {
               value={title}
               onChange={e => setTitle(e.target.value)}
             />
-            {speechSupported && (
-              <button
-                type="button"
-                onClick={toggleVoiceInput}
-                className="voice-btn"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  borderRadius: '6px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: isListening ? '#ef4444' : 'var(--text-muted)',
-                  animation: isListening ? 'voice-pulse 1.5s ease-in-out infinite' : 'none',
-                  position: 'relative',
-                }}
-                title={isListening ? 'Stop listening' : 'Voice input'}
-              >
-                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
-                {isListening && (
-                  <span style={{
-                    position: 'absolute',
-                    inset: '-2px',
-                    borderRadius: '8px',
-                    border: '2px solid #ef4444',
-                    animation: 'voice-pulse 1.5s ease-in-out infinite',
-                    pointerEvents: 'none',
-                  }} />
-                )}
-              </button>
-            )}
+            <VoiceMic onResult={(t) => setTitle(t)} size={18} />
             <kbd className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>⌘K</kbd>
           </div>
 
@@ -253,6 +154,5 @@ export default function QuickAdd({ open, onClose, onCreated }) {
         </form>
       </div>
     </div>
-    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import VoiceMic from './VoiceMic';
 
 const QUADRANT_LABELS = {
   1: '🔴 Q1: Urgent + Important',
@@ -79,21 +80,27 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            className="input text-base font-medium"
-            placeholder="What needs to be done?"
-            value={form.title}
-            onChange={e => setForm({ ...form, title: e.target.value })}
-            autoFocus
-          />
+          <div className="flex items-center gap-2">
+            <input
+              className="input text-base font-medium flex-1"
+              placeholder="What needs to be done?"
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              autoFocus
+            />
+            <VoiceMic onResult={(t) => setForm(f => ({ ...f, title: t }))} size={16} />
+          </div>
 
-          <textarea
-            className="input"
-            placeholder="Notes..."
-            rows={2}
-            value={form.notes}
-            onChange={e => setForm({ ...form, notes: e.target.value })}
-          />
+          <div className="flex items-start gap-2">
+            <textarea
+              className="input flex-1"
+              placeholder="Notes..."
+              rows={2}
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+            />
+            <VoiceMic onAppend={(t) => setForm(f => ({ ...f, notes: f.notes ? f.notes + ' ' + t : t }))} mode="append" size={16} />
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>

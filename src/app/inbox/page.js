@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell';
 import { useInbox, useRoles, useContexts, useProjects, processInboxItem, createTask, createInboxItem } from '@/lib/hooks';
 import { useState } from 'react';
 import { Inbox, ArrowRight, Trash2, Plus, Archive, Clock, Lightbulb } from 'lucide-react';
+import VoiceMic from '@/components/VoiceMic';
 
 const QUADRANT_OPTIONS = [
   { value: 1, label: '🔴 Q1: Urgent + Important', color: 'var(--q1)' },
@@ -102,12 +103,15 @@ function ProcessingCard({ item, roles, contexts, projects, onProcess }) {
       {/* Task creation form */}
       {action === 'task' && (
         <div className="space-y-3 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
-          <input
-            className="input"
-            value={form.title}
-            onChange={e => setForm({ ...form, title: e.target.value })}
-            placeholder="Task title"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              className="input flex-1"
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              placeholder="Task title"
+            />
+            <VoiceMic onResult={(t) => setForm(f => ({ ...f, title: t }))} size={16} />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
               <option value="next_action">Next Action</option>
@@ -174,13 +178,14 @@ function InboxPage() {
       </div>
 
       {/* Quick capture */}
-      <form onSubmit={handleAdd} className="flex gap-2 mb-6">
+      <form onSubmit={handleAdd} className="flex gap-2 mb-6 items-center">
         <input
           className="input flex-1"
           placeholder="Capture something... (thought, task, idea)"
           value={newItem}
           onChange={e => setNewItem(e.target.value)}
         />
+        <VoiceMic onResult={(t) => setNewItem(t)} size={16} />
         <button type="submit" className="btn btn-primary">
           <Plus size={16} /> Capture
         </button>
