@@ -1,11 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { getSupabase } from './supabase-browser';
 
 const AuthContext = createContext({});
 
 const GOOGLE_TOKEN_KEY = 'mindos_google_token';
+const GOOGLE_TOKEN_EXPIRY_KEY = 'mindos_google_token_expiry';
 const GOOGLE_REFRESH_TOKEN_KEY = 'mindos_google_refresh_token';
 
 export function AuthProvider({ children }) {
@@ -13,21 +14,35 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [googleToken, setGoogleToken] = useState(null);
+  const [tokenExpired, setTokenExpired] = useState(false);
+
+  const storeGoogleToken = (token) => {
+    setGoogleToken(token);
+    localStorage.setItem(GOOGLE_TOKEN_KEY, token);
+    // Google access tokens expire in 1 hour — store expiry with 5min buffer
+    const expiry = Date.now() + 55 * 60 * 1000;
+    localStorage.setItem(GOOGLE_TOKEN_EXPIRY_KEY, String(expiry));
+    setTokenExpired(false);
+  };
 
   useEffect(() => {
     const supabase = getSupabase();
 
-    // Restore Google token from localStorage
+    // Restore Google token from localStorage (check expiry)
     const savedToken = localStorage.getItem(GOOGLE_TOKEN_KEY);
-    if (savedToken) setGoogleToken(savedToken);
+    const savedExpiry = localStorage.getItem(GOOGLE_TOKEN_EXPIRY_KEY);
+    if (savedToken && savedExpiry && Date.now() < Number(savedExpiry)) {
+      setGoogleToken(savedToken);
+    } else if (savedToken) {
+      // Token expired
+      setTokenExpired(true);
+    }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      // provider_token is only available right after OAuth login
       if (session?.provider_token) {
-        setGoogleToken(session.provider_token);
-        localStorage.setItem(GOOGLE_TOKEN_KEY, session.provider_token);
+        storeGoogleToken(session.provider_token);
       }
       if (session?.provider_refresh_token) {
         localStorage.setItem(GOOGLE_REFRESH_TOKEN_KEY, session.provider_refresh_token);
@@ -40,17 +55,17 @@ export function AuthProvider({ children }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.provider_token) {
-          setGoogleToken(session.provider_token);
-          localStorage.setItem(GOOGLE_TOKEN_KEY, session.provider_token);
+          storeGoogleToken(session.provider_token);
         }
         if (session?.provider_refresh_token) {
           localStorage.setItem(GOOGLE_REFRESH_TOKEN_KEY, session.provider_refresh_token);
         }
         if (!session) {
-          // Signed out — clear tokens
           localStorage.removeItem(GOOGLE_TOKEN_KEY);
+          localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
           localStorage.removeItem(GOOGLE_REFRESH_TOKEN_KEY);
           setGoogleToken(null);
+          setTokenExpired(false);
         }
         setLoading(false);
       }
@@ -78,23 +93,35 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     const supabase = getSupabase();
     localStorage.removeItem(GOOGLE_TOKEN_KEY);
+    localStorage.removeItem(GOOGLE_TOKEN_EXPIRY_KEY);
     localStorage.removeItem(GOOGLE_REFRESH_TOKEN_KEY);
     setGoogleToken(null);
+    setTokenExpired(false);
     await supabase.auth.signOut();
   };
 
-  const getGoogleToken = () => {
+  const getGoogleToken = useCallback(() => {
+    // Check expiry
+    const expiry = localStorage.getItem(GOOGLE_TOKEN_EXPIRY_KEY);
+    if (expiry && Date.now() >= Number(expiry)) {
+      setTokenExpired(true);
+      return null;
+    }
     return googleToken || localStorage.getItem(GOOGLE_TOKEN_KEY) || null;
-  };
+  }, [googleToken]);
 
-  // Force re-login if token is expired
   const refreshGoogleToken = async () => {
-    // The simplest approach: ask user to re-authenticate
+    // Re-authenticate to get a fresh token
     await signInWithGoogle();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithGoogle, signOut, getGoogleToken, refreshGoogleToken }}>
+    <AuthContext.Provider value={{
+      user, session, loading,
+      signInWithGoogle, signOut,
+      getGoogleToken, refreshGoogleToken,
+      tokenExpired,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -9,7 +9,7 @@ import { Mail, RefreshCw, ArrowRight, Search, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 function EmailPage() {
-  const { session, getGoogleToken } = useAuth();
+  const { session, getGoogleToken, refreshGoogleToken, tokenExpired } = useAuth();
   const { refetch: refetchInbox } = useInbox();
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,21 +20,26 @@ function EmailPage() {
   const token = getGoogleToken();
 
   const loadEmails = async () => {
-    if (!token) return;
+    const t = getGoogleToken();
+    if (!t) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchEmails(token, query);
+      const data = await fetchEmails(t, query);
       setEmails(data);
     } catch (err) {
-      setError(err.message);
+      if (err.message?.includes('401')) {
+        setError('Google token expired. Please reconnect to refresh access.');
+      } else {
+        setError(err.message);
+      }
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    if (token) loadEmails();
-  }, [token]);
+    if (token && !tokenExpired) loadEmails();
+  }, [token, tokenExpired]);
 
   const convertToInbox = async (email) => {
     await createInboxItem({
@@ -46,10 +51,9 @@ function EmailPage() {
       email_snippet: email.snippet,
     });
     setConverted(prev => new Set([...prev, email.id]));
-    refetchInbox();
   };
 
-  if (!token) {
+  if (!token || tokenExpired) {
     return (
       <div className="max-w-3xl animate-in">
         <h1 className="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -57,11 +61,18 @@ function EmailPage() {
           Email → Todo
         </h1>
         <div className="card text-center py-12">
-          <div className="text-4xl mb-4">🔒</div>
-          <p className="text-lg font-medium mb-2">Gmail Access Required</p>
-          <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-            Sign out and sign back in to grant Gmail access. Make sure to approve the Gmail scope.
+          <div className="text-4xl mb-4">{tokenExpired ? '⏰' : '🔒'}</div>
+          <p className="text-lg font-medium mb-2">
+            {tokenExpired ? 'Google Session Expired' : 'Gmail Access Required'}
           </p>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+            {tokenExpired
+              ? 'Your Google access token has expired. Reconnect to refresh it.'
+              : 'Sign in with Google to grant Gmail access.'}
+          </p>
+          <button onClick={refreshGoogleToken} className="btn btn-primary">
+            <RefreshCw size={16} /> {tokenExpired ? 'Reconnect Google' : 'Sign In with Google'}
+          </button>
         </div>
       </div>
     );
