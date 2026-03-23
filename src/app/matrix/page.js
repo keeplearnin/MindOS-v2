@@ -14,7 +14,7 @@ const quadrants = [
 ];
 
 function MatrixPage() {
-  const { data: tasks, refetch } = useTasks();
+  const { data: tasks } = useTasks();
   const { data: roles } = useRoles();
   const { data: contexts } = useContexts();
   const { data: projects } = useProjects();
@@ -27,7 +27,6 @@ function MatrixPage() {
 
   const handleToggle = async (task) => {
     await updateTask(task.id, { status: 'done', completed_at: new Date().toISOString() });
-    refetch();
   };
 
   const handleSave = async (data) => {
@@ -38,12 +37,10 @@ function MatrixPage() {
     }
     setModalOpen(false);
     setEditingTask(null);
-    refetch();
   };
 
   const handleDelete = async (id) => {
     await deleteTask(id);
-    refetch();
   };
 
   // Drag and drop support
@@ -56,7 +53,6 @@ function MatrixPage() {
     const taskId = e.dataTransfer.getData('taskId');
     if (taskId) {
       await updateTask(taskId, { quadrant: quadrantId });
-      refetch();
     }
   };
 

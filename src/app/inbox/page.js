@@ -146,7 +146,7 @@ function ProcessingCard({ item, roles, contexts, projects, onProcess }) {
 }
 
 function InboxPage() {
-  const { data: items, refetch } = useInbox();
+  const { data: items } = useInbox();
   const { data: roles } = useRoles();
   const { data: contexts } = useContexts();
   const { data: projects } = useProjects();
@@ -157,7 +157,6 @@ function InboxPage() {
     if (!newItem.trim()) return;
     await createInboxItem({ title: newItem.trim(), source: 'manual' });
     setNewItem('');
-    refetch();
   };
 
   return (

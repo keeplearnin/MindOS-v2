@@ -135,7 +135,7 @@ function GoogleTaskCard({ gTask, taskListId, onComplete, onImport }) {
 // Main TasksPage
 // ---------------------------------------------------------------------------
 function TasksPage() {
-  const { data: tasks, refetch } = useTasks();
+  const { data: tasks } = useTasks();
   const { data: roles } = useRoles();
   const { data: contexts } = useContexts();
   const { data: projects } = useProjects();
@@ -199,7 +199,6 @@ function TasksPage() {
     } else {
       await updateTask(task.id, { status: 'done', completed_at: new Date().toISOString() });
     }
-    refetch();
   };
 
   const handleSave = async (data) => {
@@ -210,7 +209,6 @@ function TasksPage() {
     }
     setModalOpen(false);
     setEditingTask(null);
-    refetch();
   };
 
   const handleEdit = (task) => {
@@ -220,7 +218,6 @@ function TasksPage() {
 
   const handleDelete = async (id) => {
     await deleteTask(id);
-    refetch();
   };
 
   // ---------- Google Task handlers ----------
@@ -246,7 +243,6 @@ function TasksPage() {
       completed_at: gTask.status === 'completed' ? gTask.completed || new Date().toISOString() : null,
     };
     await createTask(data);
-    refetch();
   };
 
   // ---------- Tabs ----------

@@ -1,42 +1,65 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { getSupabase } from './supabase-browser';
 
-// Generic hook to fetch data from Supabase
-export function useSupabaseQuery(table, options = {}) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// ─── SWR Fetcher ───────────────────────────────────────────────
+// Builds a Supabase query from a structured key and returns data.
+// Key format: [table, filtersJSON, orderBy, ascending]
 
-  const { filters = {}, orderBy = 'created_at', ascending = false, enabled = true } = options;
+async function supabaseFetcher([table, filtersJSON, orderBy, ascending]) {
+  const supabase = getSupabase();
+  let query = supabase.from(table).select('*');
 
-  const fetch = useCallback(async () => {
-    if (!enabled) return;
-    setLoading(true);
-    const supabase = getSupabase();
-    let query = supabase.from(table).select('*');
+  const filters = JSON.parse(filtersJSON);
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      query = query.eq(key, value);
+    }
+  });
 
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        query = query.eq(key, value);
-      }
-    });
+  if (orderBy) query = query.order(orderBy, { ascending });
 
-    if (orderBy) query = query.order(orderBy, { ascending });
-
-    const { data, error } = await query;
-    if (error) setError(error);
-    else setData(data || []);
-    setLoading(false);
-  }, [table, JSON.stringify(filters), orderBy, ascending, enabled]);
-
-  useEffect(() => { fetch(); }, [fetch]);
-
-  return { data, loading, error, refetch: fetch };
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
 }
 
-// Task-specific hooks
+// ─── Generic Hook ──────────────────────────────────────────────
+// Replaces the old useSupabaseQuery with SWR-powered caching.
+//
+// Benefits:
+//   - Deduplicates identical requests (roles, contexts loaded once even if 5 components call useRoles)
+//   - Caches results — navigating back to a page shows data instantly
+//   - Background revalidation — stale data shows immediately, fresh data swaps in
+//   - Stable key via pre-serialized filtersJSON — no JSON.stringify in dependency array
+
+export function useSupabaseQuery(table, options = {}) {
+  const { filters = {}, orderBy = 'created_at', ascending = false, enabled = true } = options;
+
+  // Pre-serialize filters once so the SWR key is stable across renders
+  const filtersJSON = JSON.stringify(filters);
+  const key = enabled ? [table, filtersJSON, orderBy, ascending] : null;
+
+  const { data, error, isLoading, mutate } = useSWR(key, supabaseFetcher, {
+    // Roles/contexts/projects rarely change — keep cached for 5 minutes
+    dedupingInterval: table === 'tasks' || table === 'inbox_items' ? 2000 : 60000,
+    revalidateOnFocus: table === 'tasks' || table === 'inbox_items',
+    // Show stale data while revalidating
+    keepPreviousData: true,
+  });
+
+  return {
+    data: data || [],
+    loading: isLoading,
+    error,
+    refetch: () => mutate(),
+  };
+}
+
+// ─── Specific Hooks ────────────────────────────────────────────
+// Each returns the same { data, loading, error, refetch } shape.
+
 export function useTasks(filters = {}) {
   return useSupabaseQuery('tasks', {
     filters,
@@ -75,7 +98,19 @@ export function useContexts() {
   });
 }
 
-// Mutation helpers
+// ─── Mutation Helpers ──────────────────────────────────────────
+// After each mutation, invalidate the relevant SWR cache so all
+// components using that data re-render with fresh results.
+
+function invalidate(table) {
+  // Invalidate all SWR keys that start with this table name
+  globalMutate(
+    (key) => Array.isArray(key) && key[0] === table,
+    undefined,
+    { revalidate: true }
+  );
+}
+
 export async function createTask(task) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
@@ -85,6 +120,7 @@ export async function createTask(task) {
     .select()
     .single();
   if (error) throw error;
+  invalidate('tasks');
   return data;
 }
 
@@ -97,6 +133,7 @@ export async function updateTask(id, updates) {
     .select()
     .single();
   if (error) throw error;
+  invalidate('tasks');
   return data;
 }
 
@@ -104,6 +141,7 @@ export async function deleteTask(id) {
   const supabase = getSupabase();
   const { error } = await supabase.from('tasks').delete().eq('id', id);
   if (error) throw error;
+  invalidate('tasks');
 }
 
 export async function createInboxItem(item) {
@@ -115,6 +153,7 @@ export async function createInboxItem(item) {
     .select()
     .single();
   if (error) throw error;
+  invalidate('inbox_items');
   return data;
 }
 
@@ -125,6 +164,7 @@ export async function processInboxItem(id) {
     .update({ processed: true })
     .eq('id', id);
   if (error) throw error;
+  invalidate('inbox_items');
 }
 
 export async function createProject(project) {
@@ -136,6 +176,7 @@ export async function createProject(project) {
     .select()
     .single();
   if (error) throw error;
+  invalidate('projects');
   return data;
 }
 
@@ -148,5 +189,6 @@ export async function updateProject(id, updates) {
     .select()
     .single();
   if (error) throw error;
+  invalidate('projects');
   return data;
 }
