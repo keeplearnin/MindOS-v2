@@ -180,6 +180,42 @@ export async function createProject(project) {
   return data;
 }
 
+// ─── Mood Entries ──────────────────────────────────────────────
+
+export function useMoodEntries(limit = 50) {
+  const key = ['mood_entries_recent', limit];
+  const { data, error, isLoading, mutate } = useSWR(key, async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('mood_entries')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  }, { dedupingInterval: 5000 });
+
+  return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
+}
+
+export async function createMoodEntry(entry) {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('mood_entries')
+    .insert({ ...entry, user_id: user.id })
+    .select()
+    .single();
+  if (error) throw error;
+  // Invalidate mood entries cache
+  globalMutate(
+    (key) => Array.isArray(key) && key[0] === 'mood_entries_recent',
+    undefined,
+    { revalidate: true }
+  );
+  return data;
+}
+
 export async function updateProject(id, updates) {
   const supabase = getSupabase();
   const { data, error } = await supabase

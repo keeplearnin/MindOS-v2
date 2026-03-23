@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import TopNav from './TopNav';
 import QuickAdd from './QuickAdd';
+import MoodFAB from './MoodFAB';
 import { Brain, LogIn } from 'lucide-react';
 import { useState, useCallback } from 'react';
 
@@ -80,6 +81,7 @@ export default function AppShell({ children }) {
         open={quickAddOpen}
         onClose={handleQuickAddClose}
       />
+      <MoodFAB />
     </div>
   );
 }

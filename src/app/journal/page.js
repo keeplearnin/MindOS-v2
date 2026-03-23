@@ -4,8 +4,9 @@ import AppShell from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
 import { getSupabase } from '@/lib/supabase-browser';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { BookOpen, ChevronLeft, ChevronRight, Star, Calendar, Check } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Star, Calendar, Check, Heart } from 'lucide-react';
 import VoiceMic from '@/components/VoiceMic';
+import { useMoodEntries } from '@/lib/hooks';
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns';
 
 const MOODS = [
@@ -52,6 +53,105 @@ function useDebounce(callback, delay) {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => callbackRef.current(...args), delay);
   }, [delay]);
+}
+
+const MOOD_LABELS = { 1: 'Awful', 2: 'Low', 3: 'Okay', 4: 'Good', 5: 'Great' };
+const MOOD_COLORS = { 1: 'var(--danger)', 2: 'var(--warning)', 3: 'var(--text-muted)', 4: 'var(--q2)', 5: 'var(--accent)' };
+
+function MoodTimeline() {
+  const { data: entries, loading } = useMoodEntries(30);
+
+  if (loading) return null;
+  if (entries.length === 0) {
+    return (
+      <div className="card mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Heart size={18} style={{ color: 'var(--accent)' }} />
+          <h3 className="text-sm font-semibold">Mood Check-ins</h3>
+        </div>
+        <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>
+          No mood entries yet. Tap the 😊 button to log how you feel.
+        </p>
+      </div>
+    );
+  }
+
+  // Group by date
+  const grouped = {};
+  entries.forEach(e => {
+    const day = format(new Date(e.created_at), 'yyyy-MM-dd');
+    if (!grouped[day]) grouped[day] = [];
+    grouped[day].push(e);
+  });
+
+  // Average mood per day for the mini chart
+  const days = Object.keys(grouped).sort().slice(-14);
+  const avgMoods = days.map(d => {
+    const dayEntries = grouped[d];
+    const avg = dayEntries.reduce((sum, e) => sum + e.mood, 0) / dayEntries.length;
+    return { date: d, avg, count: dayEntries.length };
+  });
+
+  return (
+    <div className="card mb-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Heart size={18} style={{ color: 'var(--accent)' }} />
+        <h3 className="text-sm font-semibold">Mood Check-ins</h3>
+        <span className="text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>{entries.length} entries</span>
+      </div>
+
+      {/* Mini mood chart — bar chart of daily averages */}
+      {avgMoods.length > 1 && (
+        <div className="mb-4">
+          <div className="flex items-end gap-1" style={{ height: '60px' }}>
+            {avgMoods.map(d => (
+              <div
+                key={d.date}
+                className="flex-1 rounded-t"
+                style={{
+                  height: `${(d.avg / 5) * 100}%`,
+                  background: MOOD_COLORS[Math.round(d.avg)],
+                  opacity: 0.7,
+                  minHeight: '4px',
+                }}
+                title={`${format(parseISO(d.date), 'MMM d')}: ${d.avg.toFixed(1)} avg (${d.count} check-ins)`}
+              />
+            ))}
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{format(parseISO(avgMoods[0].date), 'MMM d')}</span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{format(parseISO(avgMoods[avgMoods.length - 1].date), 'MMM d')}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Recent entries list */}
+      <div className="space-y-2">
+        {entries.slice(0, 10).map(e => (
+          <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: 'var(--bg)' }}>
+            <span style={{ fontSize: '1.25rem' }}>{e.emoji}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium" style={{ color: MOOD_COLORS[e.mood] }}>{MOOD_LABELS[e.mood]}</span>
+                {e.energy && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Energy: {e.energy}/5</span>}
+              </div>
+              {e.note && <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{e.note}</p>}
+              {e.tags && e.tags.length > 0 && (
+                <div className="flex gap-1 mt-1">
+                  {e.tags.map(t => (
+                    <span key={t} className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>
+              {format(new Date(e.created_at), 'h:mm a')}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function JournalPage() {
@@ -253,6 +353,9 @@ function JournalPage() {
           </button>
         </div>
       </div>
+
+      {/* Mood Timeline */}
+      <MoodTimeline />
 
       {/* Mood Selector */}
       <div className="card mb-4">
