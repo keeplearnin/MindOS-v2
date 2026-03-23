@@ -101,7 +101,7 @@ function EmailPage() {
       </div>
 
       {/* Quick filters */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {['is:unread', 'is:starred', 'is:important', 'label:inbox newer_than:1d'].map(q => (
           <button
             key={q}

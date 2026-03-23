@@ -89,7 +89,7 @@ export default function QuickAdd({ open, onClose, onCreated }) {
           </div>
 
           {/* Quick options bar */}
-          <div className="flex items-center gap-2 px-5 py-3" style={{ borderTop: '1px solid var(--border)' }}>
+          <div className="quick-options-bar flex items-center gap-2 px-5 py-3" style={{ borderTop: '1px solid var(--border)' }}>
             {/* Status pills */}
             <div className="flex gap-1">
               {[

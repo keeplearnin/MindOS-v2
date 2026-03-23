@@ -270,6 +270,13 @@ body {
   /* Quick add dialog - full width on mobile */
   .quick-add-overlay { padding-top: 5vh; }
   .quick-add-dialog { width: 95%; border-radius: 12px; }
+  .quick-add-dialog .quick-options-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .quick-add-dialog .quick-options-bar::-webkit-scrollbar { display: none; }
+  .quick-pill { padding: 0.2rem 0.5rem; font-size: 0.6875rem; }
 
   /* Cards - less padding */
   .card { padding: 1rem; border-radius: 10px; }

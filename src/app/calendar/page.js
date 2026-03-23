@@ -15,6 +15,7 @@ function CalendarPage() {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [showCreate, setShowCreate] = useState(false);
   const [newEvent, setNewEvent] = useState({ summary: '', date: '', startTime: '09:00', endTime: '10:00', description: '' });
+  const [activeDayIndex, setActiveDayIndex] = useState(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1); // Mon=0
 
   const token = getGoogleToken();
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -118,14 +119,16 @@ function CalendarPage() {
       {showCreate && (
         <div className="card mb-4 animate-in">
           <h3 className="font-semibold mb-3">Create Event</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <input className="input col-span-2" placeholder="Event title" value={newEvent.summary} onChange={e => setNewEvent({ ...newEvent, summary: e.target.value })} />
-            <input type="date" className="input" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
-            <div className="flex gap-2">
-              <input type="time" className="input" value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} />
-              <input type="time" className="input" value={newEvent.endTime} onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })} />
+          <div className="space-y-3">
+            <input className="input" placeholder="Event title" value={newEvent.summary} onChange={e => setNewEvent({ ...newEvent, summary: e.target.value })} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input type="date" className="input" value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} />
+              <div className="flex gap-2">
+                <input type="time" className="input" value={newEvent.startTime} onChange={e => setNewEvent({ ...newEvent, startTime: e.target.value })} />
+                <input type="time" className="input" value={newEvent.endTime} onChange={e => setNewEvent({ ...newEvent, endTime: e.target.value })} />
+              </div>
             </div>
-            <textarea className="input col-span-2" placeholder="Description (optional)" rows={2} value={newEvent.description} onChange={e => setNewEvent({ ...newEvent, description: e.target.value })} />
+            <textarea className="input" placeholder="Description (optional)" rows={2} value={newEvent.description} onChange={e => setNewEvent({ ...newEvent, description: e.target.value })} />
           </div>
           <div className="flex gap-2 mt-3">
             <button onClick={handleCreateEvent} className="btn btn-primary">Create</button>
@@ -140,8 +143,73 @@ function CalendarPage() {
         </div>
       )}
 
-      {/* Week view */}
-      <div className="grid grid-cols-7 gap-2">
+      {/* Mobile: day selector tabs + single day view */}
+      <div className="md:hidden">
+        <div className="flex gap-1 mb-3 overflow-x-auto">
+          {days.map((day, i) => {
+            const isToday = isSameDay(day, new Date());
+            const dayEvents = getEventsForDay(day);
+            return (
+              <button
+                key={day.toISOString()}
+                onClick={() => setActiveDayIndex(i)}
+                className="flex-1 min-w-0 py-2 px-1 rounded-lg text-center"
+                style={{
+                  background: activeDayIndex === i ? 'var(--accent-bg)' : isToday ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-card)',
+                  border: activeDayIndex === i ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                }}
+              >
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{format(day, 'EEE')}</p>
+                <p className="text-sm font-bold" style={{ color: activeDayIndex === i ? 'var(--accent)' : 'var(--text)' }}>{format(day, 'd')}</p>
+                {dayEvents.length > 0 && (
+                  <div className="w-1.5 h-1.5 rounded-full mx-auto mt-1" style={{ background: 'var(--accent)' }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Active day events */}
+        {(() => {
+          const day = days[activeDayIndex];
+          if (!day) return null;
+          const dayEvents = getEventsForDay(day);
+          return (
+            <div className="card" style={{ minHeight: '200px' }}>
+              <h3 className="font-semibold mb-3">{format(day, 'EEEE, MMMM d')}</h3>
+              {dayEvents.length === 0 ? (
+                <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>No events</p>
+              ) : (
+                <div className="space-y-2">
+                  {dayEvents.map(event => {
+                    const start = event.start?.dateTime;
+                    const end = event.end?.dateTime;
+                    return (
+                      <div key={event.id} className="p-3 rounded-lg" style={{ background: 'var(--bg)', borderLeft: '3px solid var(--accent)' }}>
+                        <p className="text-sm font-medium">{event.summary}</p>
+                        {start && (
+                          <p className="flex items-center gap-1.5 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                            <Clock size={12} />
+                            {format(new Date(start), 'h:mm a')}{end && ` — ${format(new Date(end), 'h:mm a')}`}
+                          </p>
+                        )}
+                        {event.location && (
+                          <p className="flex items-center gap-1.5 mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+                            <MapPin size={12} /> {event.location}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Desktop: 7-column week grid */}
+      <div className="hidden md:grid grid-cols-7 gap-2">
         {days.map(day => {
           const dayEvents = getEventsForDay(day);
           const isToday = isSameDay(day, new Date());
@@ -152,7 +220,7 @@ function CalendarPage() {
             }}>
               <div className="text-center mb-3">
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{format(day, 'EEE')}</p>
-                <p className={`text-lg font-bold ${isToday ? '' : ''}`} style={{ color: isToday ? 'var(--accent)' : 'var(--text)' }}>
+                <p className="text-lg font-bold" style={{ color: isToday ? 'var(--accent)' : 'var(--text)' }}>
                   {format(day, 'd')}
                 </p>
               </div>

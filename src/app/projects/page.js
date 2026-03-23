@@ -110,7 +110,7 @@ function ProjectsPage() {
             <input className="input" placeholder="Project title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} autoFocus />
             <textarea className="input" placeholder="Description" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
             <input className="input" placeholder="Desired outcome — What does 'done' look like?" value={form.desired_outcome} onChange={e => setForm({ ...form, desired_outcome: e.target.value })} />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <select className="input" value={form.role_id} onChange={e => setForm({ ...form, role_id: e.target.value })}>
                 <option value="">Link to role</option>
                 {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
