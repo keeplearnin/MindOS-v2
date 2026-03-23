@@ -7,7 +7,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Inbox, CheckSquare, Grid3X3, FolderKanban,
   Mail, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
-  BookOpen, Sun, Menu, X
+  BookOpen, Sun, Menu, X, Heart
 } from 'lucide-react';
 
 const nav = [
@@ -20,6 +20,7 @@ const nav = [
   { href: '/email', label: 'Email', icon: Mail },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/journal', label: 'Journal', icon: BookOpen },
+  { href: '/wellbeing', label: 'Wellbeing', icon: Heart },
   { href: '/weekly-review', label: 'Review', icon: ClipboardCheck },
 ];
 

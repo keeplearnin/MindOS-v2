@@ -198,6 +198,22 @@ export function useMoodEntries(limit = 50) {
   return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
 }
 
+export function useJournalEntries(limit = 30) {
+  const key = ['journal_entries_recent', limit];
+  const { data, error, isLoading } = useSWR(key, async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .select('id, date, mood, content, created_at')
+      .order('date', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  }, { dedupingInterval: 10000 });
+
+  return { data: data || [], loading: isLoading, error };
+}
+
 export async function createMoodEntry(entry) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
