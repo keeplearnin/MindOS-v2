@@ -82,17 +82,17 @@ function ProcessingCard({ item, roles, contexts, projects, onProcess }) {
       {!action && (
         <div>
           <p className="text-xs mb-3 font-medium" style={{ color: 'var(--text-muted)' }}>GTD: Is this actionable?</p>
-          <div className="flex gap-2">
-            <button onClick={() => setAction('task')} className="btn btn-primary flex-1">
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setAction('task')} className="btn btn-primary flex-1 min-w-[calc(50%-0.25rem)]">
               <ArrowRight size={14} /> Yes → Task
             </button>
-            <button onClick={() => handleProcess('someday')} className="btn btn-ghost">
+            <button onClick={() => handleProcess('someday')} className="btn btn-ghost min-w-[calc(50%-0.25rem)]">
               <Lightbulb size={14} /> Someday
             </button>
-            <button onClick={() => handleProcess('reference')} className="btn btn-ghost">
+            <button onClick={() => handleProcess('reference')} className="btn btn-ghost min-w-[calc(50%-0.25rem)]">
               <Archive size={14} /> Reference
             </button>
-            <button onClick={() => handleProcess('trash')} className="btn btn-danger">
+            <button onClick={() => handleProcess('trash')} className="btn btn-danger min-w-[calc(50%-0.25rem)]">
               <Trash2 size={14} />
             </button>
           </div>
@@ -108,7 +108,7 @@ function ProcessingCard({ item, roles, contexts, projects, onProcess }) {
             onChange={e => setForm({ ...form, title: e.target.value })}
             placeholder="Task title"
           />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
               <option value="next_action">Next Action</option>
               <option value="waiting_for">Waiting For</option>
@@ -117,7 +117,7 @@ function ProcessingCard({ item, roles, contexts, projects, onProcess }) {
               {QUADRANT_OPTIONS.map(q => <option key={q.value} value={q.value}>{q.label}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <select className="input" value={form.role_id} onChange={e => setForm({ ...form, role_id: e.target.value })}>
               <option value="">Role</option>
               {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}

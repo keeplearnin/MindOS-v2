@@ -4,10 +4,14 @@ import { AuthProvider } from '@/lib/auth-context';
 export const metadata = {
   title: 'MindOS — 7 Habits + GTD',
   description: 'Your productivity operating system combining 7 Habits of Highly Effective People with Getting Things Done',
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'MindOS',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
   },
 };
 
@@ -16,7 +20,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: 'cover',
-  themeColor: '#1e293b',
+  themeColor: '#f0f4f8',
 };
 
 export default function RootLayout({ children }) {
@@ -26,6 +30,11 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           {children}
         </AuthProvider>
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+          }
+        `}} />
       </body>
     </html>
   );

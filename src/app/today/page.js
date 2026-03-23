@@ -188,7 +188,7 @@ function TodayPage() {
     : ((BREAK_DURATION - timerSeconds) / BREAK_DURATION) * 100;
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '900px', margin: '0 auto' }}>
+    <div className="p-4 md:p-8 max-w-[900px] mx-auto">
       {/* Greeting */}
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
@@ -220,7 +220,7 @@ function TodayPage() {
       </div>
 
       {/* Grid layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Big Rocks */}
         <div className="card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>

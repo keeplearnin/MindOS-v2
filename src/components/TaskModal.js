@@ -95,7 +95,7 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
             onChange={e => setForm({ ...form, notes: e.target.value })}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Status</label>
               <select className="input" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
@@ -115,7 +115,7 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Role</label>
               <select className="input" value={form.role_id} onChange={e => setForm({ ...form, role_id: e.target.value })}>
@@ -132,7 +132,7 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Due Date</label>
               <input type="date" className="input" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} />

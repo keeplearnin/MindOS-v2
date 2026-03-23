@@ -27,7 +27,7 @@ const nav = [
 const mobileNav = [
   { href: '/today', label: 'Today', icon: Sun },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { href: '/inbox', label: 'Inbox', icon: Inbox },
+  { href: '/matrix', label: 'Matrix', icon: Grid3X3 },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/journal', label: 'Journal', icon: BookOpen },
 ];
@@ -208,7 +208,8 @@ export default function TopNav({ onQuickAdd }) {
               className="mobile-tab"
               style={{ color: active ? 'var(--accent)' : 'var(--text-muted)' }}
             >
-              <Icon size={20} />
+              {active && <div className="mobile-tab-indicator" />}
+              <Icon size={22} />
               <span>{item.label}</span>
             </Link>
           );

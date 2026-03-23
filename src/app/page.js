@@ -52,16 +52,16 @@ function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Inbox} label="Inbox Items" value={inbox.length} color="var(--accent)" href="/inbox" />
         <StatCard icon={CheckSquare} label="Next Actions" value={nextActions.length} color="var(--q2)" href="/tasks" />
         <StatCard icon={Clock} label="Waiting For" value={waitingFor.length} color="var(--warning)" href="/tasks" />
         <StatCard icon={AlertTriangle} label="Overdue" value={overdue.length} color="var(--danger)" href="/tasks" />
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Big Rocks This Week */}
-        <div className="col-span-2 card">
+        <div className="col-span-1 md:col-span-2 card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold flex items-center gap-2">
               <Target size={18} style={{ color: 'var(--q2)' }} />
@@ -129,7 +129,7 @@ function Dashboard() {
       {/* Roles Overview */}
       <div className="mt-6 card">
         <h2 className="font-semibold mb-4">📊 Tasks by Role (7 Habits)</h2>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {roles.map(role => {
             const roleTasks = activeTasks.filter(t => t.role_id === role.id);
             return (
