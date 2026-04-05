@@ -232,6 +232,46 @@ export async function createMoodEntry(entry) {
   return data;
 }
 
+// ─── Health Logs ───────────────────────────────────────────────
+
+export function useHealthLogs(limit = 90) {
+  const key = ['health_logs_recent', limit];
+  const { data, error, isLoading, mutate } = useSWR(key, async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('health_logs')
+      .select('*')
+      .order('date', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  }, { dedupingInterval: 5000 });
+
+  return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
+}
+
+export async function upsertHealthLog({ date, habits, bp_systolic, bp_diastolic, note }) {
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  const payload = { user_id: user.id, date, habits, note: note || null };
+  if (bp_systolic) payload.bp_systolic = bp_systolic;
+  if (bp_diastolic) payload.bp_diastolic = bp_diastolic;
+
+  const { data, error } = await supabase
+    .from('health_logs')
+    .upsert(payload, { onConflict: 'user_id,date' })
+    .select()
+    .single();
+  if (error) throw error;
+
+  globalMutate(
+    (key) => Array.isArray(key) && key[0] === 'health_logs_recent',
+    undefined,
+    { revalidate: true }
+  );
+  return data;
+}
+
 export async function updateProject(id, updates) {
   const supabase = getSupabase();
   const { data, error } = await supabase
