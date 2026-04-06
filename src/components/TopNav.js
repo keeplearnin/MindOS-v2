@@ -7,7 +7,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Inbox, CheckSquare, Grid3X3, FolderKanban,
   Mail, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
-  BookOpen, Sun, Menu, X, Heart, Moon
+  BookOpen, Sun, Menu, X, Heart, Moon, Dna
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
@@ -22,6 +22,7 @@ const nav = [
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/journal', label: 'Journal', icon: BookOpen },
   { href: '/wellbeing', label: 'Wellbeing', icon: Heart },
+  { href: '/health/sources', label: 'HealthOS', icon: Dna },
   { href: '/weekly-review', label: 'Review', icon: ClipboardCheck },
 ];
 
@@ -57,7 +58,9 @@ export default function TopNav({ onQuickAdd }) {
           {/* Desktop Navigation - hidden on mobile */}
           <nav className="topnav-desktop-links">
             {nav.map(item => {
-              const active = pathname === item.href;
+              const active = item.href.startsWith('/health')
+                ? pathname.startsWith('/health')
+                : pathname === item.href;
               const Icon = item.icon;
               return (
                 <Link
@@ -174,7 +177,9 @@ export default function TopNav({ onQuickAdd }) {
             {/* All nav links */}
             <nav className="py-2">
               {nav.map(item => {
-                const active = pathname === item.href;
+                const active = item.href.startsWith('/health')
+                  ? pathname.startsWith('/health')
+                  : pathname === item.href;
                 const Icon = item.icon;
                 return (
                   <Link

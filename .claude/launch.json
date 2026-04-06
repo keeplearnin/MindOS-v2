@@ -3,10 +3,10 @@
   "configurations": [
     {
       "name": "mindos-v2",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export NVM_DIR=\"$HOME/.nvm\" && . \"$NVM_DIR/nvm.sh\" && npm run dev"],
       "port": 3000,
-      "cwd": "/Users/hari/mindos-v2"
+      "cwd": "/Users/hari/MindOS-v2"
     }
   ]
 }
