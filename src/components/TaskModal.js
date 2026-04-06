@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Repeat } from 'lucide-react';
 import VoiceMic from './VoiceMic';
 
 const QUADRANT_LABELS = {
@@ -26,6 +26,8 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
     energy_level: '',
     estimated_minutes: '',
     waiting_for_whom: '',
+    recurrence_rule: '',
+    recurrence_interval: 1,
   });
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
         energy_level: task.energy_level || '',
         estimated_minutes: task.estimated_minutes || '',
         waiting_for_whom: task.waiting_for_whom || '',
+        recurrence_rule: task.recurrence_rule || '',
+        recurrence_interval: task.recurrence_interval || 1,
       });
     } else {
       setForm({
@@ -51,6 +55,7 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
         role_id: '', context_id: '', project_id: '', due_date: '',
         scheduled_date: '', is_big_rock: false, energy_level: '',
         estimated_minutes: '', waiting_for_whom: '',
+        recurrence_rule: '', recurrence_interval: 1,
       });
     }
   }, [task, open]);
@@ -68,6 +73,12 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
     if (!data.estimated_minutes) data.estimated_minutes = null;
     else data.estimated_minutes = parseInt(data.estimated_minutes);
     if (!data.waiting_for_whom) data.waiting_for_whom = null;
+    if (!data.recurrence_rule) {
+      data.recurrence_rule = null;
+      data.recurrence_interval = null;
+    } else {
+      data.recurrence_interval = parseInt(data.recurrence_interval) || 1;
+    }
     onSave(data);
   };
 
@@ -171,6 +182,43 @@ export default function TaskModal({ open, onClose, onSave, task, roles = [], con
             />
             <span>🪨 Big Rock (weekly priority)</span>
           </label>
+
+          {/* Recurrence */}
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer text-sm mb-2">
+              <input
+                type="checkbox"
+                checked={!!form.recurrence_rule}
+                onChange={e => setForm({ ...form, recurrence_rule: e.target.checked ? 'daily' : '' })}
+                className="w-4 h-4 rounded"
+              />
+              <Repeat size={14} style={{ color: form.recurrence_rule ? 'var(--accent)' : 'var(--text-muted)' }} />
+              <span>Repeats</span>
+            </label>
+            {form.recurrence_rule && (
+              <div className="flex items-center gap-2 ml-6">
+                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Every</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  className="input w-16 text-center"
+                  value={form.recurrence_interval}
+                  onChange={e => setForm({ ...form, recurrence_interval: e.target.value })}
+                />
+                <select
+                  className="input"
+                  value={form.recurrence_rule}
+                  onChange={e => setForm({ ...form, recurrence_rule: e.target.value })}
+                >
+                  <option value="daily">{form.recurrence_interval > 1 ? 'days' : 'day'}</option>
+                  <option value="weekly">{form.recurrence_interval > 1 ? 'weeks' : 'week'}</option>
+                  <option value="monthly">{form.recurrence_interval > 1 ? 'months' : 'month'}</option>
+                  <option value="yearly">{form.recurrence_interval > 1 ? 'years' : 'year'}</option>
+                </select>
+              </div>
+            )}
+          </div>
 
           <div className="flex gap-2 pt-2">
             <button type="submit" className="btn btn-primary flex-1">

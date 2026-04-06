@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell';
 import TaskCard from '@/components/TaskCard';
 import TaskModal from '@/components/TaskModal';
-import { useTasks, useRoles, useContexts, useProjects, createTask, updateTask, deleteTask } from '@/lib/hooks';
+import { useTasks, useRoles, useContexts, useProjects, createTask, updateTask, deleteTask, completeTask } from '@/lib/hooks';
 import { useAuth } from '@/lib/auth-context';
 import { fetchTaskLists, fetchGoogleTasks, completeGoogleTask } from '@/lib/google-tasks';
 import { useState, useEffect, useCallback } from 'react';
@@ -197,7 +197,7 @@ function TasksPage() {
     if (task.status === 'done') {
       await updateTask(task.id, { status: 'next_action', completed_at: null });
     } else {
-      await updateTask(task.id, { status: 'done', completed_at: new Date().toISOString() });
+      await completeTask(task);
     }
   };
 

@@ -7,8 +7,9 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Inbox, CheckSquare, Grid3X3, FolderKanban,
   Mail, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
-  BookOpen, Sun, Menu, X, Heart
+  BookOpen, Sun, Menu, X, Heart, Moon
 } from 'lucide-react';
+import { useTheme } from '@/lib/theme-context';
 
 const nav = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -36,6 +37,7 @@ const mobileNav = [
 export default function TopNav({ onQuickAdd }) {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -46,7 +48,7 @@ export default function TopNav({ onQuickAdd }) {
         <div className="topnav-inner">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: '#3b82f6' }}>
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)' }}>
               <Brain size={18} color="white" />
             </div>
             <span className="font-bold text-base text-white topnav-logo-text">MindOS</span>
@@ -72,6 +74,15 @@ export default function TopNav({ onQuickAdd }) {
 
           {/* Right side */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+            >
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
+
             {/* Quick Add */}
             <button
               onClick={onQuickAdd}
@@ -183,8 +194,16 @@ export default function TopNav({ onQuickAdd }) {
               })}
             </nav>
 
-            {/* Sign out */}
-            <div className="mt-auto border-t px-4 py-3" style={{ borderColor: 'var(--border)' }}>
+            {/* Theme toggle & Sign out */}
+            <div className="mt-auto border-t px-4 py-3 space-y-1" style={{ borderColor: 'var(--border)' }}>
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                {theme === 'light' ? 'Dark mode' : 'Light mode'}
+              </button>
               <button
                 onClick={() => { setShowMobileMenu(false); signOut(); }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"

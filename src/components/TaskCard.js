@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Clock, MoreHorizontal, Pencil, Trash2, User } from 'lucide-react';
+import { Check, Clock, MoreHorizontal, Pencil, Repeat, Trash2, User } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { format } from 'date-fns';
 
@@ -129,6 +129,17 @@ export default function TaskCard({ task, roles = [], contexts = [], onToggle, on
             {task.email_subject && (
               <span className="badge" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
                 📧 Email
+              </span>
+            )}
+            {task.recurrence_rule && (
+              <span className="badge flex items-center gap-1" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                <Repeat size={10} />
+                {task.recurrence_interval > 1
+                  ? `Every ${task.recurrence_interval} ${task.recurrence_rule.replace('ly', '') + 's'}`
+                  : task.recurrence_rule === 'daily' ? 'Daily'
+                  : task.recurrence_rule === 'weekly' ? 'Weekly'
+                  : task.recurrence_rule === 'monthly' ? 'Monthly'
+                  : 'Yearly'}
               </span>
             )}
           </div>

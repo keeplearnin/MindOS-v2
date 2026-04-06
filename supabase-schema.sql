@@ -80,6 +80,11 @@ create table public.tasks (
   energy_level text check (energy_level in ('high', 'medium', 'low')),
   estimated_minutes int,
 
+  -- Recurrence
+  recurrence_rule text check (recurrence_rule in ('daily', 'weekly', 'monthly', 'yearly')),
+  recurrence_interval int default 1, -- every N periods
+  parent_task_id uuid references public.tasks(id) on delete set null, -- links spawned instances
+
   -- Email origin
   email_id text, -- Gmail message ID
   email_subject text,

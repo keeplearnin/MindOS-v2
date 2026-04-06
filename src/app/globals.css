@@ -1,36 +1,74 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #f0f4f8;
+:root,
+[data-theme="light"] {
+  --bg: #eef1f6;
   --bg-card: #ffffff;
-  --bg-hover: #f0f2f5;
-  --bg-sidebar: #1e293b;
-  --bg-sidebar-hover: #334155;
-  --border: #e2e8f0;
-  --text: #1e293b;
+  --bg-hover: #e8ecf2;
+  --bg-sidebar: #0f172a;
+  --bg-sidebar-hover: #1e293b;
+  --surface: #f1f4f9;
+  --border: #d8dee8;
+  --text: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --accent: #2563eb;
-  --accent-light: #3b82f6;
-  --accent-bg: #eff6ff;
-  --accent-hover: #1e40af;
-  --q1: #dc2626;
+  --text-muted: #8892a8;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-bg: #eef2ff;
+  --accent-hover: #4f46e5;
+  --q1: #ef4444;
   --q1-bg: #fef2f2;
-  --q2: #059669;
+  --q2: #10b981;
   --q2-bg: #ecfdf5;
-  --q3: #d97706;
+  --q3: #f59e0b;
   --q3-bg: #fffbeb;
   --q4: #6b7280;
   --q4-bg: #f9fafb;
-  --success: #059669;
+  --success: #10b981;
   --success-bg: #ecfdf5;
-  --warning: #d97706;
+  --warning: #f59e0b;
   --warning-bg: #fffbeb;
-  --danger: #dc2626;
+  --danger: #ef4444;
   --danger-bg: #fef2f2;
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow: 0 2px 6px 0 rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0c0f1a;
+  --bg-card: #151929;
+  --bg-hover: #1c2137;
+  --bg-sidebar: #0a0d17;
+  --bg-sidebar-hover: #151929;
+  --surface: #1c2137;
+  --border: #252d44;
+  --text: #e8eaf0;
+  --text-secondary: #a1a8c0;
+  --text-muted: #5e6687;
+  --accent: #818cf8;
+  --accent-light: #a5b4fc;
+  --accent-bg: rgba(129, 140, 248, 0.12);
+  --accent-hover: #6366f1;
+  --q1: #f87171;
+  --q1-bg: rgba(248, 113, 113, 0.1);
+  --q2: #34d399;
+  --q2-bg: rgba(52, 211, 153, 0.1);
+  --q3: #fbbf24;
+  --q3-bg: rgba(251, 191, 36, 0.1);
+  --q4: #9ca3af;
+  --q4-bg: rgba(156, 163, 175, 0.08);
+  --success: #34d399;
+  --success-bg: rgba(52, 211, 153, 0.1);
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  color-scheme: dark;
 }
 
 body {
@@ -123,8 +161,8 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 .topnav-link.active {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-light);
+  background: rgba(99, 102, 241, 0.15);
 }
 
 /* Quick Add Button in nav */
@@ -137,15 +175,15 @@ body {
   font-size: 0.8125rem;
   font-weight: 500;
   color: white;
-  background: #3b82f6;
+  background: var(--accent);
   border: none;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 .quick-add-btn:hover {
-  background: #2563eb;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  background: var(--accent-hover);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
 }
 
 /* Mobile hamburger button - hidden on desktop */
@@ -385,7 +423,7 @@ body {
 .btn-danger {
   background: transparent;
   color: var(--danger);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--danger-bg);
 }
 .btn-danger:hover { background: var(--danger-bg); }
 
@@ -403,7 +441,7 @@ body {
 }
 .input:focus {
   border-color: var(--accent-light);
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
 }
 .input::placeholder { color: var(--text-muted); }
 
@@ -492,8 +530,8 @@ select.input {
   border-radius: 6px;
   font-size: 0.6875rem;
   font-weight: 500;
-  background: #e8f0fe;
-  color: #1967d2;
+  background: var(--accent-bg);
+  color: var(--accent);
 }
 
 /* Voice input button */
@@ -599,15 +637,43 @@ select.input {
 }
 .journal-section textarea:focus {
   border-color: var(--accent-light);
-  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+  box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
 }
 
 /* Quote card */
 .quote-card {
-  background: linear-gradient(135deg, var(--accent-bg) 0%, #f0f4ff 100%);
-  border: 1px solid rgba(59, 130, 246, 0.15);
+  background: linear-gradient(135deg, var(--accent-bg) 0%, var(--surface) 100%);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
   font-style: italic;
   color: var(--text-secondary);
+}
+
+/* Theme toggle */
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+}
+
+/* Smooth theme transition */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease, box-shadow 0.3s ease !important;
 }

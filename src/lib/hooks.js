@@ -124,6 +124,59 @@ export async function createTask(task) {
   return data;
 }
 
+// Compute the next due date for a recurring task
+function getNextDate(dateStr, rule, interval) {
+  const base = dateStr ? new Date(dateStr) : new Date();
+  const d = new Date(base);
+  switch (rule) {
+    case 'daily':   d.setDate(d.getDate() + interval); break;
+    case 'weekly':  d.setDate(d.getDate() + 7 * interval); break;
+    case 'monthly': d.setMonth(d.getMonth() + interval); break;
+    case 'yearly':  d.setFullYear(d.getFullYear() + interval); break;
+  }
+  return d.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+// Complete a task. If recurring, spawn the next occurrence.
+export async function completeTask(task) {
+  // Mark done
+  await updateTask(task.id, { status: 'done', completed_at: new Date().toISOString() });
+
+  // Spawn next occurrence if recurring
+  if (task.recurrence_rule) {
+    const nextDue = getNextDate(task.due_date, task.recurrence_rule, task.recurrence_interval || 1);
+
+    // Shift scheduled_date by the same offset if it existed
+    let nextScheduled = null;
+    if (task.scheduled_date && task.due_date) {
+      const offsetMs = new Date(task.scheduled_date) - new Date(task.due_date);
+      const nd = new Date(nextDue);
+      nd.setTime(nd.getTime() + offsetMs);
+      nextScheduled = nd.toISOString().split('T')[0];
+    } else if (task.scheduled_date) {
+      nextScheduled = getNextDate(task.scheduled_date, task.recurrence_rule, task.recurrence_interval || 1);
+    }
+
+    await createTask({
+      title: task.title,
+      notes: task.notes,
+      status: 'next_action',
+      quadrant: task.quadrant,
+      role_id: task.role_id,
+      context_id: task.context_id,
+      project_id: task.project_id,
+      due_date: nextDue,
+      scheduled_date: nextScheduled,
+      is_big_rock: task.is_big_rock,
+      energy_level: task.energy_level,
+      estimated_minutes: task.estimated_minutes,
+      recurrence_rule: task.recurrence_rule,
+      recurrence_interval: task.recurrence_interval,
+      parent_task_id: task.parent_task_id || task.id,
+    });
+  }
+}
+
 export async function updateTask(id, updates) {
   const supabase = getSupabase();
   const { data, error } = await supabase

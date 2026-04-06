@@ -1,5 +1,6 @@
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { ThemeProvider } from '@/lib/theme-context';
 
 export const metadata = {
   title: 'MindOS — 7 Habits + GTD',
@@ -27,9 +28,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
         <script dangerouslySetInnerHTML={{ __html: `
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js');

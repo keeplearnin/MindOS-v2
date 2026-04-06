@@ -4,7 +4,7 @@ import AppShell from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
 import { getSupabase } from '@/lib/supabase-browser';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { BookOpen, ChevronLeft, ChevronRight, Star, Calendar, Check, Heart } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Star, Calendar, Check, Mic } from 'lucide-react';
 import VoiceMic from '@/components/VoiceMic';
 import { useMoodEntries } from '@/lib/hooks';
 import { format, addDays, subDays, isToday, parseISO } from 'date-fns';
@@ -18,11 +18,11 @@ const MOODS = [
 ];
 
 const SECTIONS = [
-  { key: 'morning_intentions', icon: '🌅', title: 'Morning Intentions', placeholder: 'What are the 3 most important things today?', rows: 4 },
-  { key: 'gratitude', icon: '🙏', title: 'Gratitude', placeholder: 'What are you grateful for?', rows: 3 },
-  { key: 'reflections', icon: '🧠', title: 'Reflections', placeholder: 'Free-form thoughts, observations, ideas...', rows: 5 },
-  { key: 'wins', icon: '🏆', title: 'Wins', placeholder: 'What went well today?', rows: 3 },
-  { key: 'lessons', icon: '📈', title: 'Lessons', placeholder: 'What did you learn?', rows: 3 },
+  { key: 'morning_intentions', icon: '🌅', title: 'Morning Intentions', placeholder: 'What are the 3 most important things today?', rows: 3 },
+  { key: 'gratitude', icon: '🙏', title: 'Gratitude', placeholder: 'What are you grateful for?', rows: 2 },
+  { key: 'reflections', icon: '🧠', title: 'Reflections', placeholder: 'Free-form thoughts, observations, ideas...', rows: 4 },
+  { key: 'wins', icon: '🏆', title: 'Wins', placeholder: 'What went well today?', rows: 2 },
+  { key: 'lessons', icon: '📈', title: 'Lessons', placeholder: 'What did you learn?', rows: 2 },
 ];
 
 const EMPTY_CONTENT = {
@@ -39,7 +39,6 @@ function parseContent(raw) {
     const parsed = JSON.parse(raw);
     return { ...EMPTY_CONTENT, rating: 0, ...parsed };
   } catch {
-    // Legacy plain text — put it in reflections
     return { ...EMPTY_CONTENT, rating: 0, reflections: raw };
   }
 }
@@ -55,105 +54,6 @@ function useDebounce(callback, delay) {
   }, [delay]);
 }
 
-const MOOD_LABELS = { 1: 'Awful', 2: 'Low', 3: 'Okay', 4: 'Good', 5: 'Great' };
-const MOOD_COLORS = { 1: 'var(--danger)', 2: 'var(--warning)', 3: 'var(--text-muted)', 4: 'var(--q2)', 5: 'var(--accent)' };
-
-function MoodTimeline() {
-  const { data: entries, loading } = useMoodEntries(30);
-
-  if (loading) return null;
-  if (entries.length === 0) {
-    return (
-      <div className="card mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Heart size={18} style={{ color: 'var(--accent)' }} />
-          <h3 className="text-sm font-semibold">Mood Check-ins</h3>
-        </div>
-        <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>
-          No mood entries yet. Tap the 😊 button to log how you feel.
-        </p>
-      </div>
-    );
-  }
-
-  // Group by date
-  const grouped = {};
-  entries.forEach(e => {
-    const day = format(new Date(e.created_at), 'yyyy-MM-dd');
-    if (!grouped[day]) grouped[day] = [];
-    grouped[day].push(e);
-  });
-
-  // Average mood per day for the mini chart
-  const days = Object.keys(grouped).sort().slice(-14);
-  const avgMoods = days.map(d => {
-    const dayEntries = grouped[d];
-    const avg = dayEntries.reduce((sum, e) => sum + e.mood, 0) / dayEntries.length;
-    return { date: d, avg, count: dayEntries.length };
-  });
-
-  return (
-    <div className="card mb-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Heart size={18} style={{ color: 'var(--accent)' }} />
-        <h3 className="text-sm font-semibold">Mood Check-ins</h3>
-        <span className="text-xs ml-auto" style={{ color: 'var(--text-muted)' }}>{entries.length} entries</span>
-      </div>
-
-      {/* Mini mood chart — bar chart of daily averages */}
-      {avgMoods.length > 1 && (
-        <div className="mb-4">
-          <div className="flex items-end gap-1" style={{ height: '60px' }}>
-            {avgMoods.map(d => (
-              <div
-                key={d.date}
-                className="flex-1 rounded-t"
-                style={{
-                  height: `${(d.avg / 5) * 100}%`,
-                  background: MOOD_COLORS[Math.round(d.avg)],
-                  opacity: 0.7,
-                  minHeight: '4px',
-                }}
-                title={`${format(parseISO(d.date), 'MMM d')}: ${d.avg.toFixed(1)} avg (${d.count} check-ins)`}
-              />
-            ))}
-          </div>
-          <div className="flex justify-between mt-1">
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{format(parseISO(avgMoods[0].date), 'MMM d')}</span>
-            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{format(parseISO(avgMoods[avgMoods.length - 1].date), 'MMM d')}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Recent entries list */}
-      <div className="space-y-2">
-        {entries.slice(0, 10).map(e => (
-          <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-lg" style={{ background: 'var(--bg)' }}>
-            <span style={{ fontSize: '1.25rem' }}>{e.emoji}</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium" style={{ color: MOOD_COLORS[e.mood] }}>{MOOD_LABELS[e.mood]}</span>
-                {e.energy && <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Energy: {e.energy}/5</span>}
-              </div>
-              {e.note && <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{e.note}</p>}
-              {e.tags && e.tags.length > 0 && (
-                <div className="flex gap-1 mt-1">
-                  {e.tags.map(t => (
-                    <span key={t} className="text-xs px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>
-              {format(new Date(e.created_at), 'h:mm a')}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function JournalPage() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -165,6 +65,7 @@ function JournalPage() {
   const [content, setContent] = useState({ ...EMPTY_CONTENT });
   const [mood, setMood] = useState(null);
   const [rating, setRating] = useState(0);
+  const [showRecent, setShowRecent] = useState(false);
 
   const dateStr = format(currentDate, 'yyyy-MM-dd');
 
@@ -198,7 +99,7 @@ function JournalPage() {
     load();
   }, [user, dateStr]);
 
-  // Load recent entries (last 7 days excluding current)
+  // Load recent entries
   useEffect(() => {
     if (!user) return;
     const loadRecent = async () => {
@@ -227,7 +128,6 @@ function JournalPage() {
     const currentRating = updates.rating !== undefined ? updates.rating : rating;
     const currentMood = updates.mood !== undefined ? updates.mood : mood;
 
-    // Store everything as JSON string in the text column
     const contentJson = JSON.stringify({
       ...currentContent,
       rating: currentRating,
@@ -257,12 +157,8 @@ function JournalPage() {
         .single();
     }
 
-    if (result.data) {
-      setEntry(result.data);
-    }
-    if (result.error) {
-      console.error('Journal save error:', result.error);
-    }
+    if (result.data) setEntry(result.data);
+    if (result.error) console.error('Journal save error:', result.error);
 
     setSaving(false);
     if (!result.error) {
@@ -294,6 +190,7 @@ function JournalPage() {
   const goToToday = () => setCurrentDate(new Date());
 
   const moodForValue = (val) => MOODS.find(m => m.value === val);
+  const selectedMood = moodForValue(mood);
 
   if (loading) {
     return (
@@ -306,121 +203,161 @@ function JournalPage() {
   }
 
   return (
-    <div className="max-w-3xl animate-in">
-      {/* Header */}
+    <div className="max-w-2xl mx-auto animate-in">
+      {/* Compact Header with date nav */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen size={24} style={{ color: 'var(--accent)' }} />
-            Daily Journal
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Habit 7: Sharpen the Saw — Reflect, renew, grow
+        <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--text)' }}>
+          <BookOpen size={22} style={{ color: 'var(--accent)' }} />
+          Journal
+        </h1>
+        <div className="flex items-center gap-1">
+          {saving && (
+            <span className="text-xs px-2 py-1 rounded mr-2" style={{ color: 'var(--text-muted)' }}>
+              Saving...
+            </span>
+          )}
+          {saved && !saving && (
+            <span className="text-xs px-2 py-1 rounded flex items-center gap-1 mr-2" style={{ color: 'var(--success)' }}>
+              <Check size={12} /> Saved
+            </span>
+          )}
+          {recentEntries.length > 0 && (
+            <button
+              onClick={() => setShowRecent(!showRecent)}
+              className="btn btn-ghost text-xs"
+              style={{ padding: '6px 10px' }}
+            >
+              <Calendar size={14} />
+              History
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Date Navigation — clean inline bar */}
+      <div className="flex items-center justify-between mb-5 px-1">
+        <button onClick={goToPrevDay} className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
+          <ChevronLeft size={20} />
+        </button>
+        <div className="text-center">
+          <p className="font-semibold" style={{ color: 'var(--text)' }}>
+            {format(currentDate, 'EEEE, MMM d')}
           </p>
+          {!isToday(currentDate) && (
+            <button onClick={goToToday} className="text-xs" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
+              Back to today
+            </button>
+          )}
         </div>
-        {saving && (
-          <span className="text-xs px-2 py-1 rounded" style={{ color: 'var(--text-muted)', background: 'var(--surface)' }}>
-            Saving...
-          </span>
-        )}
-        {saved && !saving && (
-          <span className="text-xs px-2 py-1 rounded flex items-center gap-1" style={{ color: '#22c55e', background: '#22c55e15' }}>
-            <Check size={12} /> Saved
-          </span>
-        )}
+        <button onClick={goToNextDay} className="p-1.5 rounded-lg" style={{ color: 'var(--text-muted)' }}>
+          <ChevronRight size={20} />
+        </button>
       </div>
 
-      {/* Date Navigation */}
-      <div className="card mb-6" style={{ padding: '12px 16px' }}>
-        <div className="flex items-center justify-between">
-          <button onClick={goToPrevDay} className="btn btn-ghost" style={{ padding: '6px' }}>
-            <ChevronLeft size={20} />
-          </button>
-          <div className="text-center">
-            <p className="font-semibold text-lg" style={{ color: 'var(--text)' }}>
-              {format(currentDate, 'EEEE, MMMM d, yyyy')}
-            </p>
-            {isToday(currentDate) ? (
-              <span className="text-xs font-medium" style={{ color: 'var(--accent)' }}>Today</span>
-            ) : (
-              <button onClick={goToToday} className="text-xs font-medium" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer' }}>
-                Jump to Today
+      {/* Recent Entries — collapsible panel */}
+      {showRecent && recentEntries.length > 0 && (
+        <div className="mb-5 rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+          {recentEntries.map((re, i) => {
+            const reMood = moodForValue(re.mood);
+            const reParsed = parseContent(re.content);
+            return (
+              <button
+                key={re.id}
+                onClick={() => { setCurrentDate(parseISO(re.date)); setShowRecent(false); }}
+                className="w-full flex items-center justify-between px-4 py-3 text-left transition-colors"
+                style={{
+                  borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+                  color: 'var(--text)',
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{reMood?.emoji || '📝'}</span>
+                  <div>
+                    <p className="text-sm font-medium">{format(parseISO(re.date), 'EEE, MMM d')}</p>
+                    {reMood && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Feeling {reMood.label.toLowerCase()}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  {reParsed.rating > 0 && Array.from({ length: reParsed.rating }).map((_, i) => (
+                    <Star key={i} size={12} fill="#f59e0b" color="#f59e0b" />
+                  ))}
+                </div>
               </button>
-            )}
+            );
+          })}
+        </div>
+      )}
+
+      {/* Mood + Rating — single compact row */}
+      <div className="card mb-4" style={{ padding: '16px 20px' }}>
+        <div className="flex items-center gap-6 flex-wrap">
+          {/* Mood pills */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-medium mr-1" style={{ color: 'var(--text-muted)' }}>Mood</span>
+            {MOODS.map(m => (
+              <button
+                key={m.value}
+                onClick={() => handleMoodChange(m.value)}
+                title={m.label}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  fontSize: '1.1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: mood === m.value ? '2px solid var(--accent)' : '2px solid transparent',
+                  background: mood === m.value ? 'var(--accent-bg)' : 'transparent',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {m.emoji}
+              </button>
+            ))}
           </div>
-          <button onClick={goToNextDay} className="btn btn-ghost" style={{ padding: '6px' }}>
-            <ChevronRight size={20} />
-          </button>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 28, background: 'var(--border)' }} />
+
+          {/* Star rating inline */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-medium mr-1" style={{ color: 'var(--text-muted)' }}>Day</span>
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                onClick={() => handleRatingChange(n)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 2,
+                  transition: 'transform 0.15s',
+                  transform: rating >= n ? 'scale(1.05)' : 'scale(1)',
+                  lineHeight: 1,
+                }}
+              >
+                <Star
+                  size={22}
+                  fill={rating >= n ? '#f59e0b' : 'none'}
+                  color={rating >= n ? '#f59e0b' : 'var(--border)'}
+                  strokeWidth={1.5}
+                />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Mood Timeline */}
-      <MoodTimeline />
-
-      {/* Mood Selector */}
-      <div className="card mb-4">
-        <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
-          How are you feeling?
-        </p>
-        <div className="flex gap-2 justify-center">
-          {MOODS.map(m => (
-            <button
-              key={m.value}
-              onClick={() => handleMoodChange(m.value)}
-              className="flex flex-col items-center gap-1 rounded-xl transition-all"
-              style={{
-                padding: '10px 16px',
-                background: mood === m.value ? 'var(--accent)15' : 'var(--surface)',
-                border: mood === m.value ? '2px solid var(--accent)' : '2px solid transparent',
-                cursor: 'pointer',
-              }}
-            >
-              <span className="text-2xl">{m.emoji}</span>
-              <span className="text-xs" style={{ color: mood === m.value ? 'var(--accent)' : 'var(--text-muted)' }}>
-                {m.label}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Day Rating */}
-      <div className="card mb-4">
-        <p className="text-sm font-medium mb-3" style={{ color: 'var(--text)' }}>
-          Rate your day
-        </p>
-        <div className="flex gap-1 justify-center">
-          {[1, 2, 3, 4, 5].map(n => (
-            <button
-              key={n}
-              onClick={() => handleRatingChange(n)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                padding: '4px',
-                transition: 'transform 0.15s',
-                transform: rating >= n ? 'scale(1.1)' : 'scale(1)',
-              }}
-            >
-              <Star
-                size={32}
-                fill={rating >= n ? '#f59e0b' : 'none'}
-                color={rating >= n ? '#f59e0b' : 'var(--border)'}
-                strokeWidth={1.5}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Journal Sections */}
+      {/* Journal Sections — clean minimal cards */}
       {SECTIONS.map(section => (
-        <div key={section.key} className="card mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-              {section.icon} {section.title}
-            </p>
+        <div key={section.key} className="mb-3">
+          <div className="flex items-center justify-between mb-1.5 px-1">
+            <label className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+              <span>{section.icon}</span>
+              {section.title}
+            </label>
             <VoiceMic
               onAppend={(t) => handleContentChange(section.key, (content[section.key] || '') + (content[section.key] ? ' ' : '') + t)}
               mode="append"
@@ -433,53 +370,10 @@ function JournalPage() {
             placeholder={section.placeholder}
             value={content[section.key] || ''}
             onChange={e => handleContentChange(section.key, e.target.value)}
-            style={{ resize: 'vertical', width: '100%' }}
+            style={{ resize: 'vertical', width: '100%', background: 'var(--bg-card)', borderRadius: 10 }}
           />
         </div>
       ))}
-
-      {/* Recent Entries */}
-      {recentEntries.length > 0 && (
-        <div className="mt-8 mb-4">
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text)' }}>
-            <Calendar size={18} style={{ color: 'var(--accent)' }} />
-            Recent Entries
-          </h2>
-          <div className="space-y-2">
-            {recentEntries.map(re => {
-              const reMood = moodForValue(re.mood);
-              const reParsed = parseContent(re.content);
-              return (
-                <button
-                  key={re.id}
-                  onClick={() => setCurrentDate(parseISO(re.date))}
-                  className="card w-full text-left flex items-center justify-between transition-all"
-                  style={{ padding: '12px 16px', cursor: 'pointer', border: '1px solid var(--border)' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{reMood?.emoji || '📝'}</span>
-                    <div>
-                      <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                        {format(parseISO(re.date), 'EEE, MMM d')}
-                      </p>
-                      {reMood && (
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                          Feeling {reMood.label.toLowerCase()}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {reParsed.rating > 0 && Array.from({ length: reParsed.rating }).map((_, i) => (
-                      <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />
-                    ))}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

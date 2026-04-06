@@ -34,7 +34,7 @@ export default function AppShell({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
         <div className="text-center animate-in">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: '#3b82f6', boxShadow: '0 8px 24px rgba(59,130,246,0.3)' }}>
+          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: 'var(--accent)', boxShadow: '0 8px 24px rgba(99,102,241,0.3)' }}>
             <Brain size={40} color="white" />
           </div>
           <h1 className="text-3xl font-bold mb-2 text-white">MindOS</h1>
@@ -48,7 +48,7 @@ export default function AppShell({ children }) {
           <button
             onClick={signInWithGoogle}
             className="inline-flex items-center gap-3 px-8 py-3.5 rounded-xl text-base font-medium text-white transition-all"
-            style={{ background: '#3b82f6', boxShadow: '0 4px 12px rgba(59,130,246,0.4)' }}
+            style={{ background: 'var(--accent)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}
           >
             <LogIn size={20} />
             Sign in with Google
