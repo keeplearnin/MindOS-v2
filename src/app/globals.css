@@ -37,37 +37,37 @@
 }
 
 [data-theme="dark"] {
-  --bg: #0c0f1a;
-  --bg-card: #151929;
-  --bg-hover: #1c2137;
-  --bg-sidebar: #0a0d17;
-  --bg-sidebar-hover: #151929;
-  --surface: #1c2137;
-  --border: #252d44;
-  --text: #e8eaf0;
-  --text-secondary: #a1a8c0;
-  --text-muted: #5e6687;
+  --bg: #08090f;
+  --bg-card: #14172a;
+  --bg-hover: #1e2240;
+  --bg-sidebar: #060710;
+  --bg-sidebar-hover: #14172a;
+  --surface: #1a1e35;
+  --border: #2a3050;
+  --text: #f0f1f5;
+  --text-secondary: #b0b8d0;
+  --text-muted: #687290;
   --accent: #818cf8;
   --accent-light: #a5b4fc;
-  --accent-bg: rgba(129, 140, 248, 0.12);
+  --accent-bg: rgba(129, 140, 248, 0.14);
   --accent-hover: #6366f1;
-  --q1: #f87171;
-  --q1-bg: rgba(248, 113, 113, 0.1);
+  --q1: #fb7185;
+  --q1-bg: rgba(251, 113, 133, 0.14);
   --q2: #34d399;
-  --q2-bg: rgba(52, 211, 153, 0.1);
+  --q2-bg: rgba(52, 211, 153, 0.14);
   --q3: #fbbf24;
-  --q3-bg: rgba(251, 191, 36, 0.1);
+  --q3-bg: rgba(251, 191, 36, 0.14);
   --q4: #9ca3af;
-  --q4-bg: rgba(156, 163, 175, 0.08);
+  --q4-bg: rgba(156, 163, 175, 0.1);
   --success: #34d399;
-  --success-bg: rgba(52, 211, 153, 0.1);
+  --success-bg: rgba(52, 211, 153, 0.14);
   --warning: #fbbf24;
-  --warning-bg: rgba(251, 191, 36, 0.1);
-  --danger: #f87171;
-  --danger-bg: rgba(248, 113, 113, 0.1);
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --warning-bg: rgba(251, 191, 36, 0.14);
+  --danger: #fb7185;
+  --danger-bg: rgba(251, 113, 133, 0.14);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5);
+  --shadow: 0 2px 8px 0 rgb(0 0 0 / 0.5), 0 1px 3px -1px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 16px -2px rgb(0 0 0 / 0.6), 0 2px 6px -2px rgb(0 0 0 / 0.4);
   color-scheme: dark;
 }
 
@@ -387,6 +387,14 @@ body {
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 .card:hover { box-shadow: var(--shadow); }
+[data-theme="dark"] .card {
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+[data-theme="dark"] .card:hover {
+  border-color: #353c5e;
+  box-shadow: var(--shadow), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
 
 /* Quadrant borders */
 .q1 { border-left: 3px solid var(--q1); }
@@ -444,6 +452,9 @@ body {
   box-shadow: 0 0 0 3px rgb(99 102 241 / 0.15);
 }
 .input::placeholder { color: var(--text-muted); }
+[data-theme="dark"] .input {
+  background: var(--surface);
+}
 
 /* Select */
 select.input {
