@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { createInboxItem, useInbox } from '@/lib/hooks';
 import { fetchEmails } from '@/lib/gmail';
 import { useState, useEffect } from 'react';
-import { Mail, RefreshCw, ArrowRight, Search, Check } from 'lucide-react';
+import { Mail, RefreshCw, ArrowRight, Search, Check, AlertCircle, Star } from 'lucide-react';
 import { format } from 'date-fns';
 
 function EmailPage() {
@@ -14,7 +14,7 @@ function EmailPage() {
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [query, setQuery] = useState('is:unread');
+  const [query, setQuery] = useState('in:inbox is:important');
   const [converted, setConverted] = useState(new Set());
 
   const token = getGoogleToken();
@@ -113,13 +113,19 @@ function EmailPage() {
 
       {/* Quick filters */}
       <div className="flex flex-wrap gap-2 mb-4">
-        {['is:unread', 'is:starred', 'is:important', 'label:inbox newer_than:1d'].map(q => (
+        {[
+          { q: 'in:inbox is:important', label: 'Important + Inbox' },
+          { q: 'in:inbox', label: 'Inbox' },
+          { q: 'is:important', label: 'Important' },
+          { q: 'is:starred', label: 'Starred' },
+          { q: 'in:inbox newer_than:1d', label: 'Today' },
+        ].map(({ q, label }) => (
           <button
             key={q}
             className={`tab ${query === q ? 'active' : ''}`}
-            onClick={() => { setQuery(q); }}
+            onClick={() => setQuery(q)}
           >
-            {q.replace('newer_than:1d', '(today)').replace('label:', '')}
+            {label}
           </button>
         ))}
       </div>
@@ -150,7 +156,20 @@ function EmailPage() {
             return (
               <div key={email.id} className="card flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{email.subject}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium truncate flex-1">{email.subject}</p>
+                    {email.labelIds?.includes('IMPORTANT') && (
+                      <span className="badge flex items-center gap-1" style={{ background: 'var(--warning-bg)', color: 'var(--warning)', flexShrink: 0 }}>
+                        <AlertCircle size={10} /> Important
+                      </span>
+                    )}
+                    {email.labelIds?.includes('STARRED') && (
+                      <Star size={14} fill="#f59e0b" color="#f59e0b" style={{ flexShrink: 0 }} />
+                    )}
+                    {email.labelIds?.includes('UNREAD') && (
+                      <span className="w-2 h-2 rounded-full" style={{ background: 'var(--accent)', flexShrink: 0 }} />
+                    )}
+                  </div>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{email.from}</p>
                   <p className="text-xs mt-1 line-clamp-2" style={{ color: 'var(--text-muted)' }}>{email.snippet}</p>
                   {email.date && (
