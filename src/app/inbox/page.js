@@ -146,7 +146,7 @@ function ProcessingCard({ item, roles, contexts, projects, onProcess }) {
 }
 
 function InboxPage() {
-  const { data: items } = useInbox();
+  const { data: items, refetch } = useInbox();
   const { data: roles } = useRoles();
   const { data: contexts } = useContexts();
   const { data: projects } = useProjects();
