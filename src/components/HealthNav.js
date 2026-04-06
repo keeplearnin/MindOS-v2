@@ -2,12 +2,13 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Library, MessageSquare, FlaskConical } from 'lucide-react';
+import { Library, MessageSquare, FlaskConical, Heart } from 'lucide-react';
 
 const tabs = [
   { href: '/health/sources', label: 'Sources', icon: Library },
   { href: '/health/ask', label: 'Ask', icon: MessageSquare },
   { href: '/health/protocols', label: 'Protocols', icon: FlaskConical },
+  { href: '/health/wellbeing', label: 'Wellbeing', icon: Heart },
 ];
 
 export default function HealthNav() {

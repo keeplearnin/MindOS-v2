@@ -5,34 +5,27 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
 import {
-  LayoutDashboard, Inbox, CheckSquare, Grid3X3, FolderKanban,
-  Mail, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
-  BookOpen, Sun, Menu, X, Heart, Moon, Dna
+  Inbox, CheckSquare, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
+  Sun, Menu, X, Moon, Dna
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
 const nav = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/today', label: 'Today', icon: Sun },
+  { href: '/', label: 'Today', icon: Sun },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { href: '/matrix', label: 'Matrix', icon: Grid3X3 },
-  { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/email', label: 'Email', icon: Mail },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/journal', label: 'Journal', icon: BookOpen },
-  { href: '/wellbeing', label: 'Wellbeing', icon: Heart },
   { href: '/health/sources', label: 'HealthOS', icon: Dna },
   { href: '/weekly-review', label: 'Review', icon: ClipboardCheck },
 ];
 
 // Bottom bar items for mobile (5 key items)
 const mobileNav = [
-  { href: '/today', label: 'Today', icon: Sun },
+  { href: '/', label: 'Today', icon: Sun },
+  { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { href: '/matrix', label: 'Matrix', icon: Grid3X3 },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/journal', label: 'Journal', icon: BookOpen },
+  { href: '/health/sources', label: 'HealthOS', icon: Dna },
 ];
 
 export default function TopNav({ onQuickAdd }) {
