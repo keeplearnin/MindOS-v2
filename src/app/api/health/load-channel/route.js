@@ -6,7 +6,12 @@ export async function POST(request) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
-  const { url, maxVideos = 200 } = await request.json();
+  let body;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+
+  const { url, maxVideos: rawMaxVideos = 200 } = body;
+  const maxVideos = Math.min(Math.max(1, parseInt(rawMaxVideos) || 200), 500);
   if (!url) {
     return NextResponse.json({ error: 'URL is required' }, { status: 400 });
   }

@@ -101,7 +101,7 @@ function ProtocolCard({ protocol, expanded, onToggle }) {
     const start = new Date(protocol.start_date);
     const now = new Date();
     const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
-    progressPct = Math.min(100, Math.round((elapsed / protocol.timeframe_days) * 100));
+    progressPct = protocol.timeframe_days > 0 ? Math.min(100, Math.round((elapsed / protocol.timeframe_days) * 100)) : 100;
   }
 
   const handleStatusChange = async (newStatus) => {

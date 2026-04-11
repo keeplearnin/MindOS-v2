@@ -8,7 +8,12 @@ export async function POST(request) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
-  const { sourceId, batchSize = 5 } = await request.json();
+  let body;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+
+  const { sourceId, batchSize: rawBatchSize = 5 } = body;
+  const batchSize = Math.min(Math.max(1, parseInt(rawBatchSize) || 5), 20);
   if (!sourceId) {
     return NextResponse.json({ error: 'sourceId is required' }, { status: 400 });
   }

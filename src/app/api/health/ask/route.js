@@ -9,7 +9,12 @@ export async function POST(request) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
-  const { question, maxChunks = 8 } = await request.json();
+  let body;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+
+  const { question, maxChunks: rawMaxChunks = 8 } = body;
+  const maxChunks = Math.min(Math.max(1, parseInt(rawMaxChunks) || 8), 20);
   if (!question) {
     return NextResponse.json({ error: 'question is required' }, { status: 400 });
   }

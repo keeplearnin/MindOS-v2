@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
-import { useTasks, useInbox, useProjects, useRoles, createTask } from '@/lib/hooks';
+import { useTasks, useInbox, useRoles, createTask } from '@/lib/hooks';
 import { fetchEvents } from '@/lib/calendar';
 import { getSupabase } from '@/lib/supabase-browser';
 import {
@@ -11,7 +11,7 @@ import {
   Inbox, CheckSquare, AlertTriangle, BookOpen, ChevronDown, ChevronUp, Star, Check
 } from 'lucide-react';
 import VoiceMic from '@/components/VoiceMic';
-import { format, isToday, startOfDay, endOfDay, startOfWeek, endOfWeek, subDays, addDays, parseISO } from 'date-fns';
+import { format, isToday, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
 
 const QUOTES = [
   { text: 'Begin with the end in mind.', author: 'Stephen Covey' },
@@ -246,28 +246,28 @@ function TodayPage() {
   const quote = getDailyQuote();
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || '';
 
-  // Derived task lists
-  const activeTasks = allTasks.filter(t => t.status !== 'done' && t.status !== 'deleted');
-  const nextActions = allTasks.filter(t => t.status === 'next_action');
-  const waitingFor = allTasks.filter(t => t.status === 'waiting_for');
-  const overdue = activeTasks.filter(t => t.due_date && new Date(t.due_date) < new Date());
+  // Derived task lists (memoized to avoid recomputing on timer ticks)
+  const activeTasks = useMemo(() => allTasks.filter(t => t.status !== 'done' && t.status !== 'deleted'), [allTasks]);
+  const nextActions = useMemo(() => allTasks.filter(t => t.status === 'next_action'), [allTasks]);
+  const waitingFor = useMemo(() => allTasks.filter(t => t.status === 'waiting_for'), [allTasks]);
+  const overdue = useMemo(() => activeTasks.filter(t => t.due_date && new Date(t.due_date) < new Date()), [activeTasks]);
 
-  const todayTasks = allTasks.filter(t => {
+  const todayTasks = useMemo(() => allTasks.filter(t => {
     if (t.status === 'done') return false;
     if (!t.due_date && !t.scheduled_date) return false;
     const due = t.due_date ? new Date(t.due_date) : null;
     const scheduled = t.scheduled_date ? new Date(t.scheduled_date) : null;
     return (due && isToday(due)) || (scheduled && isToday(scheduled));
-  });
+  }), [allTasks]);
 
   const weekStart = startOfWeek(today, { weekStartsOn: 1 }).toISOString();
   const weekEnd = endOfWeek(today, { weekStartsOn: 1 }).toISOString();
-  const bigRocks = allTasks.filter(t => {
+  const bigRocks = useMemo(() => allTasks.filter(t => {
     if (t.status === 'done' || !t.is_big_rock) return false;
     const due = t.due_date ? new Date(t.due_date) : null;
     if (!due) return true;
     return due >= new Date(weekStart) && due <= new Date(weekEnd);
-  });
+  }), [allTasks, weekStart, weekEnd]);
 
   // Calendar
   useEffect(() => {
@@ -276,7 +276,8 @@ function TodayPage() {
       if (!token) { setCalendarLoading(false); setCalendarError('No Google token'); return; }
       try {
         setCalendarLoading(true);
-        const events = await fetchEvents(token, startOfDay(today).toISOString(), endOfDay(today).toISOString());
+        const now = new Date();
+        const events = await fetchEvents(token, startOfDay(now).toISOString(), endOfDay(now).toISOString());
         setCalendarEvents(events);
         setCalendarError(null);
       } catch (err) {
@@ -284,7 +285,7 @@ function TodayPage() {
       } finally { setCalendarLoading(false); }
     }
     loadEvents();
-  }, []);
+  }, [getGoogleToken]);
 
   // Timer
   useEffect(() => {

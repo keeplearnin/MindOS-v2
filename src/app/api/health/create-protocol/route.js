@@ -8,7 +8,11 @@ export async function POST(request) {
   const { user, supabase, error } = await getAuthUser();
   if (error) return error;
 
-  const { queryId } = await request.json();
+  let body;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+
+  const { queryId } = body;
   if (!queryId) {
     return NextResponse.json({ error: 'queryId is required' }, { status: 400 });
   }

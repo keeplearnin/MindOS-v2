@@ -4,7 +4,7 @@ import AppShell from '@/components/AppShell';
 import HealthNav from '@/components/HealthNav';
 import { useKnowledgeSources, useKnowledgeVideos, useVideoStats, loadChannel, loadTranscripts } from '@/lib/health-hooks';
 import { Dna, Plus, Loader2, CheckCircle2, AlertCircle, Clock, Youtube, ChevronDown, ChevronUp, Play } from 'lucide-react';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 const STATUS_COLORS = {
   ready: 'var(--q2)',
@@ -123,22 +123,31 @@ function SourceCard({ source, expanded, onToggle }) {
   const [indexing, setIndexing] = useState(false);
   const [indexProgress, setIndexProgress] = useState(null);
   const indexingRef = useRef(false);
+  const abortRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { if (abortRef.current) abortRef.current.abort(); };
+  }, []);
 
   const handleIndex = useCallback(async () => {
     if (indexingRef.current) return;
     indexingRef.current = true;
+    abortRef.current = new AbortController();
     setIndexing(true);
 
     try {
       let remaining = stats.pending;
       while (remaining > 0) {
+        if (abortRef.current.signal.aborted) break;
         const result = await loadTranscripts(source.id, 5);
         remaining = result.remaining;
+        if (abortRef.current.signal.aborted) break;
         setIndexProgress({ processed: stats.total - remaining, total: stats.total, remaining });
       }
       setIndexProgress(null);
     } catch (err) {
-      console.error('Indexing error:', err);
+      if (!abortRef.current?.signal.aborted) console.error('Indexing error:', err);
     } finally {
       setIndexing(false);
       indexingRef.current = false;

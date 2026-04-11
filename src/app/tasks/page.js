@@ -79,7 +79,7 @@ function MatrixView({ tasks, roles, contexts, projects, onEdit }) {
     setModalOpen(false); setEditingTask(null);
   };
   const handleDragStart = (e, taskId) => { e.dataTransfer.setData('taskId', taskId); };
-  const handleDrop = async (e, quadrantId) => { e.preventDefault(); const taskId = e.dataTransfer.getData('taskId'); if (taskId) await updateTask(taskId, { quadrant: quadrantId }); };
+  const handleDrop = async (e, quadrantId) => { e.preventDefault(); const taskId = e.dataTransfer.getData('taskId'); if (taskId) { try { await updateTask(taskId, { quadrant: quadrantId }); } catch (err) { console.error('Failed to move task:', err); } } };
 
   return (
     <>

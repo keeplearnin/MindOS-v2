@@ -126,9 +126,13 @@ function EmailTab() {
   useEffect(() => { if (token && !tokenExpired) loadEmails(); }, [token, tokenExpired]);
 
   const convertToInbox = async (email) => {
-    await createInboxItem({ title: email.subject, source: 'email', email_id: email.id, email_subject: email.subject, email_from: email.from, email_snippet: email.snippet });
-    setConverted(prev => new Set([...prev, email.id]));
-    refetchInbox();
+    try {
+      await createInboxItem({ title: email.subject, source: 'email', email_id: email.id, email_subject: email.subject, email_from: email.from, email_snippet: email.snippet });
+      setConverted(prev => new Set([...prev, email.id]));
+      refetchInbox();
+    } catch (err) {
+      setError('Failed to convert email to inbox item');
+    }
   };
 
   if (!token || tokenExpired) {
@@ -212,11 +216,17 @@ function InboxPage() {
   const [newItem, setNewItem] = useState('');
   const [activeTab, setActiveTab] = useState('inbox');
 
+  const [addError, setAddError] = useState(null);
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newItem.trim()) return;
-    await createInboxItem({ title: newItem.trim(), source: 'manual' });
-    setNewItem('');
+    try {
+      await createInboxItem({ title: newItem.trim(), source: 'manual' });
+      setNewItem('');
+      setAddError(null);
+    } catch (err) {
+      setAddError('Failed to add item');
+    }
   };
 
   return (
@@ -260,6 +270,7 @@ function InboxPage() {
             <VoiceMic onResult={(t) => setNewItem(t)} size={16} />
             <button type="submit" className="btn btn-primary"><Plus size={16} /> Capture</button>
           </form>
+          {addError && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{addError}</p>}
 
           {items.length === 0 ? (
             <div className="text-center py-16">

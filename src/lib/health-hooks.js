@@ -151,14 +151,13 @@ export async function createProtocol(queryId) {
 }
 
 export async function updateProtocol(id, updates) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('health_protocols')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
+  const res = await fetch('/api/health/update-protocol', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, updates }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update protocol');
   invalidate('health_protocols_list');
-  return data;
+  return data.protocol;
 }

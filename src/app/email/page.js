@@ -9,7 +9,7 @@ import { Mail, RefreshCw, ArrowRight, Search, Check, AlertCircle, Star } from 'l
 import { format } from 'date-fns';
 
 function EmailPage() {
-  const { session, getGoogleToken, refreshGoogleToken, tokenExpired } = useAuth();
+  const { getGoogleToken, refreshGoogleToken, tokenExpired } = useAuth();
   const { refetch: refetchInbox } = useInbox();
   const [emails, setEmails] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -42,15 +42,19 @@ function EmailPage() {
   }, [token, tokenExpired]);
 
   const convertToInbox = async (email) => {
-    await createInboxItem({
-      title: email.subject,
-      source: 'email',
-      email_id: email.id,
-      email_subject: email.subject,
-      email_from: email.from,
-      email_snippet: email.snippet,
-    });
-    setConverted(prev => new Set([...prev, email.id]));
+    try {
+      await createInboxItem({
+        title: email.subject,
+        source: 'email',
+        email_id: email.id,
+        email_subject: email.subject,
+        email_from: email.from,
+        email_snippet: email.snippet,
+      });
+      setConverted(prev => new Set([...prev, email.id]));
+    } catch (err) {
+      setError('Failed to convert email to inbox item');
+    }
   };
 
   if (!token || tokenExpired) {
