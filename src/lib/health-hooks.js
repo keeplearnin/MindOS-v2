@@ -98,7 +98,38 @@ export function useHealthProtocols(status = null) {
   return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
 }
 
+export function useKnowledgeArticles(sourceId) {
+  const key = sourceId ? ['knowledge_articles_list', sourceId] : null;
+  const { data, error, isLoading, mutate } = useSWR(key, async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('knowledge_articles')
+      .select('*')
+      .eq('source_id', sourceId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }, { dedupingInterval: 5000 });
+
+  return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
+}
+
 // ─── Mutations (call API routes, then invalidate SWR) ─────────
+
+export async function loadSource(url) {
+  const res = await fetch('/api/health/load-source', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to load source');
+  invalidate('knowledge_sources_list');
+  invalidate('knowledge_videos_list');
+  invalidate('knowledge_video_stats');
+  invalidate('knowledge_articles_list');
+  return data;
+}
 
 export async function loadChannel(url) {
   const res = await fetch('/api/health/load-channel', {

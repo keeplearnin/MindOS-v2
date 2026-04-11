@@ -3,7 +3,7 @@
 import AppShell from '@/components/AppShell';
 import HealthNav from '@/components/HealthNav';
 import { useHealthQueries, askHealthQuestion, createProtocol } from '@/lib/health-hooks';
-import { MessageSquare, Send, Loader2, ExternalLink, FlaskConical, ChevronDown, ChevronUp, Clock, AlertTriangle } from 'lucide-react';
+import { MessageSquare, Send, Loader2, ExternalLink, Globe, FlaskConical, ChevronDown, ChevronUp, Clock, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
 function AskContent() {
@@ -179,22 +179,31 @@ function AnswerCard({ answer, citations, queryId, onCreateProtocol, creatingProt
         <div className="mb-4">
           <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>SOURCES</p>
           <div className="space-y-1.5">
-            {citations.map((c, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs py-1.5 px-2 rounded-lg" style={{ background: 'var(--bg)' }}>
-                <span className="font-mono font-bold shrink-0" style={{ color: 'var(--accent)' }}>[{c.index}]</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate" style={{ color: 'var(--text)' }}>{c.video_title}</p>
-                  <p className="truncate" style={{ color: 'var(--text-muted)' }}>{c.chunk_content}</p>
+            {citations.map((c, i) => {
+              const isArticle = c.source_type === 'article';
+              const title = c.source_title || c.video_title || 'Unknown';
+              const linkUrl = c.timestamp_url || c.source_url || '';
+              return (
+                <div key={i} className="flex items-start gap-2 text-xs py-1.5 px-2 rounded-lg" style={{ background: 'var(--bg)' }}>
+                  <span className="font-mono font-bold shrink-0" style={{ color: 'var(--accent)' }}>[{c.index}]</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate flex items-center gap-1" style={{ color: 'var(--text)' }}>
+                      {isArticle ? <Globe size={11} className="shrink-0" style={{ color: 'var(--accent)' }} /> : null}
+                      {title}
+                      {isArticle && c.site_name ? <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}> &middot; {c.site_name}</span> : null}
+                    </p>
+                    <p className="truncate" style={{ color: 'var(--text-muted)' }}>{c.chunk_content}</p>
+                  </div>
+                  {linkUrl && (
+                    <a href={linkUrl} target="_blank" rel="noreferrer"
+                      className="shrink-0 flex items-center gap-1 hover:opacity-80"
+                      style={{ color: 'var(--accent)' }}>
+                      {isArticle ? <Globe size={12} /> : <ExternalLink size={12} />}
+                    </a>
+                  )}
                 </div>
-                {c.timestamp_url && (
-                  <a href={c.timestamp_url} target="_blank" rel="noreferrer"
-                    className="shrink-0 flex items-center gap-1 hover:opacity-80"
-                    style={{ color: 'var(--accent)' }}>
-                    <ExternalLink size={12} />
-                  </a>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

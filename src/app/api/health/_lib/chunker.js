@@ -47,6 +47,35 @@ function splitAtSentence(text, targetLen) {
   return [text.substring(0, splitIdx).trim(), text.substring(splitIdx).trim()];
 }
 
+// Chunk plain text (for articles/web pages) — no timestamps
+export function chunkText(text) {
+  if (!text || text.trim().length === 0) return [];
+
+  const chunks = [];
+  let chunkIndex = 0;
+  let remaining = text.trim();
+
+  while (remaining.length > 0) {
+    const [chunkContent, rest] = splitAtSentence(remaining, TARGET_CHARS);
+
+    chunks.push({
+      chunk_index: chunkIndex,
+      content: chunkContent,
+      token_count: Math.ceil(chunkContent.length / AVG_CHARS_PER_TOKEN),
+    });
+
+    chunkIndex++;
+
+    if (!rest) break;
+
+    // Create overlap by including the end of the previous chunk
+    const overlapText = chunkContent.slice(-OVERLAP_CHARS);
+    remaining = overlapText + ' ' + rest;
+  }
+
+  return chunks;
+}
+
 // Main chunking function: takes transcript segments, returns chunks
 export function chunkTranscript(segments) {
   if (!segments || segments.length === 0) return [];

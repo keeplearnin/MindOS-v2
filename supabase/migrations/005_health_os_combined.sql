@@ -1,16 +1,15 @@
--- HealthOS: Knowledge sources, transcripts with pgvector embeddings, Q&A, protocols
--- Enables loading YouTube channels, RAG-based health Q&A, and experiment tracking
+-- HealthOS: Complete schema including articles support
+-- Run this single migration to set up everything
 
 -- Enable pgvector extension for similarity search
 create extension if not exists vector;
 
 -- ─── Knowledge Sources ─────────────────────────────────────────
--- Tracks loaded YouTube channels (expandable to other source types)
 
 create table knowledge_sources (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
-  type text not null check (type in ('youtube_channel', 'youtube_video')),
+  type text not null check (type in ('youtube_channel', 'youtube_video', 'article')),
   title text not null,
   url text not null,
   channel_id text,
@@ -35,7 +34,6 @@ create trigger update_knowledge_sources_updated_at
   for each row execute function public.update_updated_at();
 
 -- ─── Knowledge Videos ──────────────────────────────────────────
--- Individual videos within a source channel
 
 create table knowledge_videos (
   id uuid default gen_random_uuid() primary key,
@@ -64,27 +62,59 @@ create policy "Users can insert own videos" on knowledge_videos for insert with 
 create policy "Users can update own videos" on knowledge_videos for update using (auth.uid() = user_id);
 create policy "Users can delete own videos" on knowledge_videos for delete using (auth.uid() = user_id);
 
+-- ─── Knowledge Articles ───────────────────────────────────────
+
+create table knowledge_articles (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  source_id uuid references knowledge_sources(id) on delete cascade not null,
+  url text not null,
+  title text not null,
+  site_name text,
+  author text,
+  excerpt text,
+  word_count int,
+  favicon_url text,
+  content_status text not null default 'pending'
+    check (content_status in ('pending', 'loading', 'ready', 'error', 'no_content')),
+  chunk_count int default 0,
+  metadata jsonb default '{}',
+  created_at timestamptz default now() not null,
+  unique(user_id, url)
+);
+
+create index knowledge_articles_source on knowledge_articles(source_id);
+create index knowledge_articles_user on knowledge_articles(user_id, created_at desc);
+
+alter table knowledge_articles enable row level security;
+create policy "Users can read own articles" on knowledge_articles for select using (auth.uid() = user_id);
+create policy "Users can insert own articles" on knowledge_articles for insert with check (auth.uid() = user_id);
+create policy "Users can update own articles" on knowledge_articles for update using (auth.uid() = user_id);
+create policy "Users can delete own articles" on knowledge_articles for delete using (auth.uid() = user_id);
+
 -- ─── Transcript Chunks ─────────────────────────────────────────
--- Chunked transcript text with vector embeddings for similarity search
+-- video_id is nullable — chunks can belong to a video OR an article
 
 create table transcript_chunks (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
-  video_id uuid references knowledge_videos(id) on delete cascade not null,
+  video_id uuid references knowledge_videos(id) on delete cascade,
+  article_id uuid references knowledge_articles(id) on delete cascade,
   chunk_index int not null,
   content text not null,
   start_seconds float,
   end_seconds float,
   token_count int,
   embedding vector(1536),
-  created_at timestamptz default now() not null
+  created_at timestamptz default now() not null,
+  constraint chunks_must_have_parent check (video_id is not null or article_id is not null)
 );
 
 create index transcript_chunks_video on transcript_chunks(video_id, chunk_index);
+create index transcript_chunks_article on transcript_chunks(article_id, chunk_index);
 create index transcript_chunks_user on transcript_chunks(user_id);
 
 -- IVFFlat index for vector similarity search
--- Use 100 lists — good for personal knowledge bases under 100K chunks
 create index transcript_chunks_embedding on transcript_chunks
   using ivfflat (embedding vector_cosine_ops) with (lists = 100);
 
@@ -94,7 +124,6 @@ create policy "Users can insert own chunks" on transcript_chunks for insert with
 create policy "Users can delete own chunks" on transcript_chunks for delete using (auth.uid() = user_id);
 
 -- ─── Health Queries ────────────────────────────────────────────
--- Saved RAG Q&A with citations
 
 create table health_queries (
   id uuid default gen_random_uuid() primary key,
@@ -115,7 +144,6 @@ create policy "Users can insert own queries" on health_queries for insert with c
 create policy "Users can delete own queries" on health_queries for delete using (auth.uid() = user_id);
 
 -- ─── Health Protocols ──────────────────────────────────────────
--- Structured experiments derived from Q&A
 
 create table health_protocols (
   id uuid default gen_random_uuid() primary key,
@@ -149,7 +177,6 @@ create trigger update_health_protocols_updated_at
   for each row execute function public.update_updated_at();
 
 -- ─── Vector Similarity Search RPC ──────────────────────────────
--- Called from API routes to find relevant transcript chunks
 
 create or replace function match_transcript_chunks(
   query_embedding vector(1536),
@@ -160,6 +187,7 @@ create or replace function match_transcript_chunks(
 returns table (
   id uuid,
   video_id uuid,
+  article_id uuid,
   chunk_index int,
   content text,
   start_seconds float,
@@ -173,6 +201,7 @@ begin
   select
     tc.id,
     tc.video_id,
+    tc.article_id,
     tc.chunk_index,
     tc.content,
     tc.start_seconds,

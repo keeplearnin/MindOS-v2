@@ -136,6 +136,20 @@ export async function fetchChannelVideos(channelUrl, maxVideos = 200) {
   };
 }
 
+// Fetch metadata for a single video using InnerTube player endpoint
+export async function fetchVideoMeta(videoId) {
+  const playerData = await innertubeRequest('player', { videoId });
+  const details = playerData.videoDetails || {};
+  return {
+    video_id: videoId,
+    title: details.title || 'Untitled',
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+    duration_seconds: parseInt(details.lengthSeconds) || null,
+    thumbnail_url: details.thumbnail?.thumbnails?.slice(-1)?.[0]?.url || null,
+    channel_title: details.author || null,
+  };
+}
+
 // Fetch transcript for a single video using InnerTube
 export async function fetchTranscript(videoId) {
   // First get the video page to find transcript params

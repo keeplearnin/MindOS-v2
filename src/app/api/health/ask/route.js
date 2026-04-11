@@ -41,20 +41,35 @@ export async function POST(request) {
       });
     }
 
-    // Enrich matches with video titles
-    const videoIds = [...new Set(matches.map(m => m.video_id))];
-    const { data: videos } = await supabase
-      .from('knowledge_videos')
-      .select('id, title, url, video_id')
-      .in('id', videoIds);
+    // Enrich matches with video and article titles
+    const videoIds = [...new Set(matches.filter(m => m.video_id).map(m => m.video_id))];
+    const articleIds = [...new Set(matches.filter(m => m.article_id).map(m => m.article_id))];
 
     const videoMap = {};
-    for (const v of (videos || [])) {
-      videoMap[v.id] = v;
+    if (videoIds.length > 0) {
+      const { data: videos } = await supabase
+        .from('knowledge_videos')
+        .select('id, title, url, video_id')
+        .in('id', videoIds);
+      for (const v of (videos || [])) videoMap[v.id] = v;
+    }
+
+    const articleMap = {};
+    if (articleIds.length > 0) {
+      const { data: articles } = await supabase
+        .from('knowledge_articles')
+        .select('id, title, url, site_name')
+        .in('id', articleIds);
+      for (const a of (articles || [])) articleMap[a.id] = a;
     }
 
     // Build context for Claude
     const context = matches.map((match, i) => {
+      if (match.article_id) {
+        const article = articleMap[match.article_id] || {};
+        const domain = article.site_name || 'article';
+        return `[${i + 1}] From "${article.title || 'Unknown'}" (${domain}):\n${match.content}`;
+      }
       const video = videoMap[match.video_id] || {};
       const timestamp = Math.floor(match.start_seconds || 0);
       return `[${i + 1}] From "${video.title || 'Unknown'}" (${formatTimestamp(timestamp)}):\n${match.content}`;
@@ -81,12 +96,31 @@ Rules:
     const answer = message.content[0].text;
     const tokensUsed = (message.usage?.input_tokens || 0) + (message.usage?.output_tokens || 0);
 
-    // Build citations
+    // Build citations (support both video and article sources)
     const citations = matches.map((match, i) => {
+      if (match.article_id) {
+        const article = articleMap[match.article_id] || {};
+        return {
+          index: i + 1,
+          source_type: 'article',
+          source_title: article.title || 'Unknown',
+          source_url: article.url || '',
+          site_name: article.site_name || '',
+          // Keep video_title for backward compat with existing saved citations
+          video_title: article.title || 'Unknown',
+          timestamp_url: '',
+          chunk_content: match.content.substring(0, 200) + (match.content.length > 200 ? '...' : ''),
+          similarity: match.similarity,
+        };
+      }
       const video = videoMap[match.video_id] || {};
       const timestamp = Math.floor(match.start_seconds || 0);
       return {
         index: i + 1,
+        source_type: 'video',
+        source_title: video.title || 'Unknown',
+        source_url: video.url || '',
+        // Keep legacy fields for backward compat
         video_title: video.title || 'Unknown',
         video_url: video.url || '',
         youtube_video_id: video.video_id || '',
