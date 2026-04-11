@@ -47,6 +47,27 @@ async function resolveChannelTitle(channelUrl) {
   return match ? match[1] : 'Unknown Channel';
 }
 
+// Parse relative time strings like "2 days ago", "3 months ago" into ISO dates
+function parseRelativeTime(text) {
+  if (!text) return null;
+  const match = text.match(/(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago/i);
+  if (!match) return null;
+  const amount = parseInt(match[1]);
+  const unit = match[2].toLowerCase();
+  const now = new Date();
+  switch (unit) {
+    case 'second': now.setSeconds(now.getSeconds() - amount); break;
+    case 'minute': now.setMinutes(now.getMinutes() - amount); break;
+    case 'hour': now.setHours(now.getHours() - amount); break;
+    case 'day': now.setDate(now.getDate() - amount); break;
+    case 'week': now.setDate(now.getDate() - amount * 7); break;
+    case 'month': now.setMonth(now.getMonth() - amount); break;
+    case 'year': now.setFullYear(now.getFullYear() - amount); break;
+    default: return null;
+  }
+  return now.toISOString();
+}
+
 // Extract video data from InnerTube grid/list renderers
 function extractVideos(items) {
   const videos = [];
@@ -66,7 +87,7 @@ function extractVideos(items) {
       video_id: renderer.videoId,
       title: renderer.title?.runs?.[0]?.text || renderer.title?.simpleText || '',
       url: `https://www.youtube.com/watch?v=${renderer.videoId}`,
-      published_at: renderer.publishedTimeText?.simpleText || null,
+      published_at: parseRelativeTime(renderer.publishedTimeText?.simpleText),
       duration_seconds: durationSeconds || null,
       thumbnail_url: renderer.thumbnail?.thumbnails?.slice(-1)?.[0]?.url || null,
     });
