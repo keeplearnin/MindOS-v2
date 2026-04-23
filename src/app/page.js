@@ -3,12 +3,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
-import { useTasks, useInbox, useRoles, createTask } from '@/lib/hooks';
+import { useTasks, useRoles, createTask } from '@/lib/hooks';
 import { fetchEvents } from '@/lib/calendar';
 import { getSupabase } from '@/lib/supabase-browser';
 import {
   Sun, Clock, Target, Calendar, Plus,
-  Inbox, CheckSquare, AlertTriangle, BookOpen, ChevronDown, ChevronUp, Star, Check
+  BookOpen, ChevronDown, ChevronUp, Star, Check
 } from 'lucide-react';
 import VoiceMic from '@/components/VoiceMic';
 import { format, isToday, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
@@ -38,6 +38,12 @@ function getGreeting() {
   return 'Good evening';
 }
 
+function getWeekString() {
+  const now = new Date();
+  const weekNum = Math.ceil((((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
 function parseJournalContent(raw) {
   if (!raw) return { ...EMPTY_CONTENT, rating: 0 };
   try { return { ...EMPTY_CONTENT, rating: 0, ...JSON.parse(raw) }; }
@@ -52,28 +58,6 @@ function useDebounce(callback, delay) {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => callbackRef.current(...args), delay);
   }, [delay]);
-}
-
-// ─── Stats Row ─────────────────────────────────────────────────
-function StatsRow({ inbox, nextActions, waitingFor, overdue }) {
-  return (
-    <div className="grid grid-cols-4 gap-3 mb-5">
-      {[
-        { icon: Inbox, label: 'Inbox', value: inbox, color: 'var(--accent)' },
-        { icon: CheckSquare, label: 'Next', value: nextActions, color: 'var(--q2)' },
-        { icon: Clock, label: 'Waiting', value: waitingFor, color: 'var(--warning)' },
-        { icon: AlertTriangle, label: 'Overdue', value: overdue, color: 'var(--danger)' },
-      ].map(s => (
-        <div key={s.label} className="card flex items-center gap-3" style={{ padding: '12px' }}>
-          <s.icon size={16} style={{ color: s.color }} />
-          <div>
-            <p className="text-lg font-bold" style={{ color: 'var(--text)' }}>{s.value}</p>
-            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 // ─── Journal Section (collapsible) ─────────────────────────────
@@ -205,7 +189,6 @@ function JournalSection({ user }) {
 function TodayPage() {
   const { user, getGoogleToken } = useAuth();
   const { data: allTasks, loading: tasksLoading, refetch: refetchTasks } = useTasks();
-  const { data: inbox } = useInbox();
   const { data: roles } = useRoles();
 
   const [calendarEvents, setCalendarEvents] = useState([]);
@@ -213,15 +196,10 @@ function TodayPage() {
   const [calendarError, setCalendarError] = useState(null);
   const [quickText, setQuickText] = useState('');
   const [quickSaving, setQuickSaving] = useState(false);
+  const [q2Focus, setQ2Focus] = useState(null);
 
   const today = new Date();
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || '';
-
-  // Derived task lists (memoized to avoid recomputing on timer ticks)
-  const activeTasks = useMemo(() => allTasks.filter(t => t.status !== 'done' && t.status !== 'deleted'), [allTasks]);
-  const nextActions = useMemo(() => allTasks.filter(t => t.status === 'next_action'), [allTasks]);
-  const waitingFor = useMemo(() => allTasks.filter(t => t.status === 'waiting_for'), [allTasks]);
-  const overdue = useMemo(() => activeTasks.filter(t => t.due_date && new Date(t.due_date) < new Date()), [activeTasks]);
 
   const todayTasks = useMemo(() => allTasks.filter(t => {
     if (t.status === 'done') return false;
@@ -239,6 +217,21 @@ function TodayPage() {
     if (!due) return true;
     return due >= new Date(weekStart) && due <= new Date(weekEnd);
   }), [allTasks, weekStart, weekEnd]);
+
+  // Q2 focus for this week (from weekly_reviews.notes)
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const supabase = getSupabase();
+      const { data } = await supabase
+        .from('weekly_reviews')
+        .select('notes')
+        .eq('week', getWeekString())
+        .maybeSingle();
+      setQ2Focus(data?.notes?.trim() || '');
+    };
+    load();
+  }, [user]);
 
   // Calendar
   useEffect(() => {
@@ -279,87 +272,87 @@ function TodayPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-[900px] mx-auto">
+    <div className="p-4 md:p-8 max-w-[960px] mx-auto">
       {/* Greeting */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-          <Sun size={28} style={{ color: 'var(--warning, #f59e0b)' }} />
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+      <div style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+          <Sun size={22} style={{ color: 'var(--warning, #f59e0b)' }} />
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
             {getGreeting()}{firstName ? `, ${firstName}` : ''}
           </h1>
         </div>
-        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
-          {format(today, 'EEEE, MMMM d, yyyy')}
+        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.85rem' }}>
+          {format(today, 'EEEE, MMMM d')}
         </p>
       </div>
 
-      {/* Stats Row */}
-      <StatsRow inbox={inbox.length} nextActions={nextActions.length} waitingFor={waitingFor.length} overdue={overdue.length} />
+      {/* Q2 Focus for this week (from Weekly Review) */}
+      {q2Focus !== null && (
+        q2Focus ? (
+          <div
+            className="mb-4"
+            style={{
+              padding: '0.75rem 1rem',
+              borderLeft: '3px solid var(--q2)',
+              background: 'color-mix(in srgb, var(--q2) 5%, var(--bg-card))',
+              borderRadius: '0 8px 8px 0',
+            }}
+          >
+            <div style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--q2)', marginBottom: '0.25rem' }}>
+              🎯 This Week&rsquo;s Q2 Focus
+            </div>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text)', whiteSpace: 'pre-line' }}>{q2Focus}</p>
+          </div>
+        ) : (
+          <a
+            href="/weekly-review"
+            className="mb-4"
+            style={{ display: 'block', padding: '0.75rem 1rem', borderLeft: '3px solid var(--border)', background: 'var(--bg-card)', borderRadius: '0 8px 8px 0', fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'none' }}
+          >
+            🎯 Set your Q2 focus for this week →
+          </a>
+        )
+      )}
 
-      {/* Grid layout */}
+      {/* Quick Capture — top priority action */}
+      <form onSubmit={handleQuickCapture} className="mb-5" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <input
+          className="input"
+          type="text"
+          value={quickText}
+          onChange={e => setQuickText(e.target.value)}
+          placeholder="Capture a task…"
+          disabled={quickSaving}
+          style={{ flex: 1, padding: '0.7rem 1rem', fontSize: '0.9rem' }}
+        />
+        <VoiceMic onResult={t => setQuickText(t)} size={16} />
+        <button
+          className="btn"
+          type="submit"
+          disabled={quickSaving || !quickText.trim()}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.1rem', fontSize: '0.875rem', opacity: quickSaving || !quickText.trim() ? 0.5 : 1 }}
+        >
+          <Plus size={16} /> {quickSaving ? 'Adding…' : 'Add'}
+        </button>
+      </form>
+
+      {/* Main: Today's Tasks (wide) + aside (Big Rocks, Calendar) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Big Rocks */}
-        <div className="card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <Target size={18} style={{ color: 'var(--accent)' }} />
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Big Rocks This Week</h2>
-          </div>
-          {tasksLoading ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading...</p>
-          ) : bigRocks.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No big rocks set for this week. What matters most?</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {bigRocks.map(task => (
-                <li key={task.id} style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--text)' }}>
-                  <div style={{ fontWeight: 500 }}>{task.title}</div>
-                  {task.role_id && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{getRoleName(task.role_id)}</span>}
-                  {task.due_date && <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>Due {format(new Date(task.due_date), 'EEE')}</span>}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Calendar Events */}
-        <div className="card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            <Calendar size={18} style={{ color: 'var(--accent)' }} />
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Today&apos;s Calendar</h2>
-          </div>
-          {calendarLoading ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading events...</p>
-          ) : calendarError ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{calendarError}</p>
-          ) : calendarEvents.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>No events today. A clear day for deep work.</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {calendarEvents.map(event => (
-                <li key={event.id} style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', fontSize: '0.875rem' }}>
-                  <div style={{ fontWeight: 500, color: 'var(--text)' }}>{event.summary || 'Untitled event'}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{formatEventTime(event)}</div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        {/* Today's Tasks */}
-        <div className="card" style={{ padding: '1.25rem' }}>
+        {/* Today's Tasks — spans 2/3 on desktop */}
+        <div className="card md:col-span-2" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
             <Clock size={18} style={{ color: 'var(--accent)' }} />
             <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Today&apos;s Tasks</h2>
             <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg)', padding: '0.15rem 0.5rem', borderRadius: '999px' }}>{todayTasks.length}</span>
           </div>
           {tasksLoading ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading...</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Loading…</p>
           ) : todayTasks.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Nothing scheduled for today. Use Quick Capture below to add tasks.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Nothing scheduled for today. Capture something above.</p>
           ) : (
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {todayTasks.map(task => (
-                <li key={task.id} style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <li key={task.id} style={{ padding: '0.6rem 0.875rem', borderRadius: '8px', background: 'var(--bg)', border: '1px solid var(--border)', fontSize: '0.875rem', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.is_big_rock ? 'var(--accent)' : 'var(--text-muted)', flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 500 }}>{task.title}</div>
@@ -371,24 +364,54 @@ function TodayPage() {
           )}
         </div>
 
-      </div>
+        {/* Aside: Big Rocks + Calendar stacked */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Big Rocks */}
+          <div className="card" style={{ padding: '1.1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Target size={16} style={{ color: 'var(--accent)' }} />
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Big Rocks</h3>
+            </div>
+            {tasksLoading ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Loading…</p>
+            ) : bigRocks.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No big rocks this week.</p>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {bigRocks.map(task => (
+                  <li key={task.id} style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', background: 'var(--bg)', fontSize: '0.8rem', color: 'var(--text)' }}>
+                    <div style={{ fontWeight: 500 }}>{task.title}</div>
+                    {task.due_date && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Due {format(new Date(task.due_date), 'EEE')}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-      {/* Quick Capture */}
-      <div className="card" style={{ padding: '1.25rem', marginTop: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-          <Plus size={18} style={{ color: 'var(--accent)' }} />
-          <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Quick Capture</h2>
+          {/* Calendar */}
+          <div className="card" style={{ padding: '1.1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <Calendar size={16} style={{ color: 'var(--accent)' }} />
+              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Calendar</h3>
+            </div>
+            {calendarLoading ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Loading…</p>
+            ) : calendarError ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{calendarError}</p>
+            ) : calendarEvents.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Clear day.</p>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {calendarEvents.map(event => (
+                  <li key={event.id} style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', background: 'var(--bg)', fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: 500, color: 'var(--text)' }}>{event.summary || 'Untitled'}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{formatEventTime(event)}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-        <form onSubmit={handleQuickCapture} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <input className="input" type="text" value={quickText} onChange={e => setQuickText(e.target.value)}
-            placeholder="What needs to get done today?" disabled={quickSaving}
-            style={{ flex: 1, padding: '0.6rem 0.875rem', fontSize: '0.875rem' }} />
-          <VoiceMic onResult={t => setQuickText(t)} size={16} />
-          <button className="btn" type="submit" disabled={quickSaving || !quickText.trim()}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.25rem', fontSize: '0.875rem', opacity: quickSaving || !quickText.trim() ? 0.5 : 1 }}>
-            <Plus size={16} /> {quickSaving ? 'Adding...' : 'Add'}
-          </button>
-        </form>
       </div>
 
       {/* Journal */}
