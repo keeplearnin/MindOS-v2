@@ -7,10 +7,10 @@ import { useState } from 'react';
 import { Plus, Check, Trash2, GripVertical } from 'lucide-react';
 
 const quadrants = [
-  { id: 1, title: 'Q1: Do First', subtitle: 'Urgent + Important', color: 'var(--q1)', emoji: '🔥', tip: 'Crises, deadlines, emergencies' },
-  { id: 2, title: 'Q2: Schedule', subtitle: 'Important, Not Urgent', color: 'var(--q2)', emoji: '🎯', tip: 'Planning, prevention, relationships — THE KEY TO EFFECTIVENESS' },
-  { id: 3, title: 'Q3: Delegate', subtitle: 'Urgent, Not Important', color: 'var(--q3)', emoji: '📤', tip: 'Interruptions, some meetings, some calls' },
-  { id: 4, title: 'Q4: Eliminate', subtitle: 'Not Urgent, Not Important', color: 'var(--q4)', emoji: '🗑️', tip: 'Time wasters, busy work, escape activities' },
+  { id: 1, title: 'Q1: Crisis',  subtitle: 'Do · Urgent + Important',       color: 'var(--q1)', emoji: '🔥', tip: 'Deadlines, emergencies — necessary but reactive' },
+  { id: 2, title: 'Q2: Focus',   subtitle: 'Schedule · Important, Not Urgent', color: 'var(--q2)', emoji: '🎯', tip: 'Planning, prevention, relationships — live here' },
+  { id: 3, title: 'Q3: Noise',   subtitle: 'Delegate · Urgent, Not Important', color: 'var(--q3)', emoji: '📤', tip: 'Interruptions that feel urgent but aren\u2019t yours' },
+  { id: 4, title: 'Q4: Waste',   subtitle: 'Eliminate · Neither',              color: 'var(--q4)', emoji: '🗑️', tip: 'Escape activities, busy work — cut ruthlessly' },
 ];
 
 function MatrixPage() {
@@ -100,12 +100,23 @@ function MatrixPage() {
             <div
               key={q.id}
               className="rounded-xl p-4 flex flex-col"
-              style={{ background: 'var(--bg-card)', border: `1px solid var(--border)`, borderTop: `3px solid ${q.color}`, minHeight: '50vh' }}
+              style={{
+                background: 'var(--bg-card)',
+                border: q.id === 2 ? `1.5px solid color-mix(in srgb, ${q.color} 40%, transparent)` : `1px solid var(--border)`,
+                borderTop: `3px solid ${q.color}`,
+                boxShadow: q.id === 2 ? `0 0 0 4px color-mix(in srgb, ${q.color} 8%, transparent)` : 'none',
+                minHeight: '50vh',
+              }}
             >
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: q.color }}>
                     {q.emoji} {q.title}
+                    {q.id === 2 && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${q.color} 15%, transparent)`, color: q.color }}>
+                        Focus here
+                      </span>
+                    )}
                   </h3>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{q.subtitle}</p>
                 </div>
@@ -164,7 +175,12 @@ function MatrixPage() {
             <div
               key={q.id}
               className="rounded-xl p-4 flex flex-col"
-              style={{ background: 'var(--bg-card)', border: `1px solid var(--border)`, borderTop: `3px solid ${q.color}` }}
+              style={{
+                background: 'var(--bg-card)',
+                border: q.id === 2 ? `1.5px solid color-mix(in srgb, ${q.color} 40%, transparent)` : `1px solid var(--border)`,
+                borderTop: `3px solid ${q.color}`,
+                boxShadow: q.id === 2 ? `0 0 0 4px color-mix(in srgb, ${q.color} 8%, transparent)` : 'none',
+              }}
               onDragOver={e => e.preventDefault()}
               onDrop={e => handleDrop(e, q.id)}
             >
@@ -172,6 +188,11 @@ function MatrixPage() {
                 <div>
                   <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: q.color }}>
                     {q.emoji} {q.title}
+                    {q.id === 2 && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `color-mix(in srgb, ${q.color} 15%, transparent)`, color: q.color }}>
+                        Focus here
+                      </span>
+                    )}
                   </h3>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{q.subtitle}</p>
                 </div>

@@ -6,18 +6,26 @@ import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
 import {
   Inbox, CheckSquare, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
-  Sun, Menu, X, Moon, Dna
+  Sun, Menu, X, Moon, Dna, Target, Heart
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
 const nav = [
   { href: '/', label: 'Today', icon: Sun },
+  { href: '/matrix', label: 'Matrix', icon: Target },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/tasks', label: 'Tasks', icon: CheckSquare },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/health/sources', label: 'HealthOS', icon: Dna },
+  { href: '/health/wellbeing', label: 'Wellbeing', icon: Heart },
+  // HealthOS groups sources/protocols/ask — active on any of those, but not /health/wellbeing
+  { href: '/health/sources', label: 'HealthOS', icon: Dna, activePrefixes: ['/health/sources', '/health/protocols', '/health/ask'] },
   { href: '/weekly-review', label: 'Review', icon: ClipboardCheck },
 ];
+
+function isActive(item, pathname) {
+  if (item.activePrefixes) return item.activePrefixes.some(p => pathname.startsWith(p));
+  return pathname === item.href;
+}
 
 // Bottom bar items for mobile (5 key items)
 const mobileNav = [
@@ -51,9 +59,7 @@ export default function TopNav({ onQuickAdd }) {
           {/* Desktop Navigation - hidden on mobile */}
           <nav className="topnav-desktop-links">
             {nav.map(item => {
-              const active = item.href.startsWith('/health')
-                ? pathname.startsWith('/health')
-                : pathname === item.href;
+              const active = isActive(item, pathname);
               const Icon = item.icon;
               return (
                 <Link
@@ -170,9 +176,7 @@ export default function TopNav({ onQuickAdd }) {
             {/* All nav links */}
             <nav className="py-2">
               {nav.map(item => {
-                const active = item.href.startsWith('/health')
-                  ? pathname.startsWith('/health')
-                  : pathname === item.href;
+                const active = isActive(item, pathname);
                 const Icon = item.icon;
                 return (
                   <Link

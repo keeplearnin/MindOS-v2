@@ -264,6 +264,32 @@ function WeeklyReviewPage() {
         )}
       </div>
 
+      {/* Q2 commitment — the north star for this week */}
+      <div
+        className="card mb-6"
+        style={{
+          borderLeft: '3px solid var(--q2)',
+          background: 'color-mix(in srgb, var(--q2) 4%, var(--bg-card))',
+        }}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <span style={{ fontSize: 16 }}>🎯</span>
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--q2)' }}>
+            This Week&rsquo;s Q2 Focus
+          </h3>
+        </div>
+        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+          What 2&ndash;3 Important-but-Not-Urgent priorities will you protect this week? Keep them short.
+        </p>
+        <textarea
+          className="input"
+          rows={3}
+          placeholder={'1.\n2.\n3.'}
+          value={review?.notes || ''}
+          onChange={e => updateReview({ notes: e.target.value })}
+        />
+      </div>
+
       {/* Progress */}
       <div className="flex gap-1 mb-6">
         {steps.map((s, i) => (
