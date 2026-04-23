@@ -1,30 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
 import { useTasks, useInbox, useRoles, createTask } from '@/lib/hooks';
 import { fetchEvents } from '@/lib/calendar';
 import { getSupabase } from '@/lib/supabase-browser';
 import {
-  Sun, Clock, Target, Calendar, Plus, Play, Pause, RotateCcw, Coffee,
+  Sun, Clock, Target, Calendar, Plus,
   Inbox, CheckSquare, AlertTriangle, BookOpen, ChevronDown, ChevronUp, Star, Check
 } from 'lucide-react';
 import VoiceMic from '@/components/VoiceMic';
 import { format, isToday, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns';
-
-const QUOTES = [
-  { text: 'Begin with the end in mind.', author: 'Stephen Covey' },
-  { text: 'Put first things first.', author: 'Stephen Covey' },
-  { text: 'Think win-win.', author: 'Stephen Covey' },
-  { text: 'The key is not to prioritize what\'s on your schedule, but to schedule your priorities.', author: 'Stephen Covey' },
-  { text: 'Most of us spend too much time on what is urgent and not enough time on what is important.', author: 'Stephen Covey' },
-  { text: 'Start with the most important things first.', author: 'Stephen Covey' },
-  { text: 'Be proactive.', author: 'Stephen Covey' },
-];
-
-const WORK_DURATION = 25 * 60;
-const BREAK_DURATION = 5 * 60;
 
 const MOODS = [
   { value: 'great', emoji: '😄', label: 'Great' },
@@ -43,17 +30,6 @@ const JOURNAL_SECTIONS = [
 ];
 
 const EMPTY_CONTENT = { morning_intentions: '', gratitude: '', reflections: '', wins: '', lessons: '' };
-
-function getDailyQuote() {
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-  return QUOTES[dayOfYear % QUOTES.length];
-}
-
-function formatTime(seconds) {
-  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-  const s = (seconds % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
-}
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -237,13 +213,8 @@ function TodayPage() {
   const [calendarError, setCalendarError] = useState(null);
   const [quickText, setQuickText] = useState('');
   const [quickSaving, setQuickSaving] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(WORK_DURATION);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerMode, setTimerMode] = useState('work');
-  const intervalRef = useRef(null);
 
   const today = new Date();
-  const quote = getDailyQuote();
   const firstName = user?.user_metadata?.full_name?.split(' ')[0] || '';
 
   // Derived task lists (memoized to avoid recomputing on timer ticks)
@@ -287,27 +258,6 @@ function TodayPage() {
     loadEvents();
   }, [getGoogleToken]);
 
-  // Timer
-  useEffect(() => {
-    if (timerRunning) {
-      intervalRef.current = setInterval(() => {
-        setTimerSeconds(prev => {
-          if (prev <= 1) {
-            clearInterval(intervalRef.current);
-            setTimerRunning(false);
-            if (timerMode === 'work') { setTimerMode('break'); return BREAK_DURATION; }
-            else { setTimerMode('work'); return WORK_DURATION; }
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [timerRunning, timerMode]);
-
-  const toggleTimer = () => setTimerRunning(r => !r);
-  const resetTimer = () => { setTimerRunning(false); clearInterval(intervalRef.current); setTimerMode('work'); setTimerSeconds(WORK_DURATION); };
-
   const handleQuickCapture = async (e) => {
     e.preventDefault();
     if (!quickText.trim()) return;
@@ -328,10 +278,6 @@ function TodayPage() {
     return 'All day';
   };
 
-  const timerProgress = timerMode === 'work'
-    ? ((WORK_DURATION - timerSeconds) / WORK_DURATION) * 100
-    : ((BREAK_DURATION - timerSeconds) / BREAK_DURATION) * 100;
-
   return (
     <div className="p-4 md:p-8 max-w-[900px] mx-auto">
       {/* Greeting */}
@@ -342,22 +288,16 @@ function TodayPage() {
             {getGreeting()}{firstName ? `, ${firstName}` : ''}
           </h1>
         </div>
-        <p style={{ color: 'var(--text-muted)', margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>
+        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.95rem' }}>
           {format(today, 'EEEE, MMMM d, yyyy')}
         </p>
-        <blockquote style={{ margin: 0, padding: '0.75rem 1rem', borderLeft: '3px solid var(--accent)',
-          background: 'var(--bg-card, var(--surface, rgba(255,255,255,0.03)))', borderRadius: '0 8px 8px 0',
-          fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          &ldquo;{quote.text}&rdquo;
-          <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.8rem', fontStyle: 'normal' }}>— {quote.author}</span>
-        </blockquote>
       </div>
 
       {/* Stats Row */}
       <StatsRow inbox={inbox.length} nextActions={nextActions.length} waitingFor={waitingFor.length} overdue={overdue.length} />
 
       {/* Grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Big Rocks */}
         <div className="card" style={{ padding: '1.25rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -431,29 +371,6 @@ function TodayPage() {
           )}
         </div>
 
-        {/* Focus Timer */}
-        <div className="card" style={{ padding: '1.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-            {timerMode === 'work' ? <Target size={18} style={{ color: 'var(--accent)' }} /> : <Coffee size={18} style={{ color: 'var(--warning)' }} />}
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text)', margin: 0 }}>Focus Timer</h2>
-            <span style={{ marginLeft: 'auto', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: timerMode === 'work' ? 'var(--accent)' : 'var(--warning)', fontWeight: 600 }}>{timerMode === 'work' ? 'Work' : 'Break'}</span>
-          </div>
-          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            <div style={{ fontSize: '3rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--text)', letterSpacing: '0.05em' }}>{formatTime(timerSeconds)}</div>
-            <div style={{ width: '100%', height: '4px', borderRadius: '2px', background: 'var(--border)', marginTop: '0.75rem', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${timerProgress}%`, background: timerMode === 'work' ? 'var(--accent)' : 'var(--warning)', borderRadius: '2px', transition: 'width 1s linear' }} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
-            <button className="btn" onClick={toggleTimer} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.25rem', fontSize: '0.875rem' }}>
-              {timerRunning ? <Pause size={16} /> : <Play size={16} />}
-              {timerRunning ? 'Pause' : 'Start'}
-            </button>
-            <button className="btn" onClick={resetTimer} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', fontSize: '0.875rem', background: 'transparent', border: '1px solid var(--border)' }}>
-              <RotateCcw size={16} /> Reset
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Quick Capture */}
