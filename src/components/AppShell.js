@@ -4,11 +4,11 @@ import { useAuth } from '@/lib/auth-context';
 import TopNav from './TopNav';
 import QuickAdd from './QuickAdd';
 import MoodFAB from './MoodFAB';
-import { Brain, LogIn } from 'lucide-react';
+import { Brain, LogIn, Apple } from 'lucide-react';
 import { useState, useCallback } from 'react';
 
 export default function AppShell({ children }) {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, signInWithGoogle, signInWithApple } = useAuth();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   const handleQuickAddClose = useCallback((action) => {
@@ -45,14 +45,24 @@ export default function AppShell({ children }) {
             Your productivity operating system with Gmail & Calendar integration
           </p>
 
-          <button
-            onClick={signInWithGoogle}
-            className="inline-flex items-center gap-3 px-8 py-3.5 rounded-xl text-base font-medium text-white transition-all"
-            style={{ background: 'var(--accent)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}
-          >
-            <LogIn size={20} />
-            Sign in with Google
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            <button
+              onClick={signInWithGoogle}
+              className="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-xl text-base font-medium text-white transition-all w-64"
+              style={{ background: 'var(--accent)', boxShadow: '0 4px 12px rgba(99,102,241,0.4)' }}
+            >
+              <LogIn size={20} />
+              Sign in with Google
+            </button>
+            <button
+              onClick={signInWithApple}
+              className="inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-xl text-base font-medium text-white transition-all w-64"
+              style={{ background: '#000', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+            >
+              <Apple size={20} />
+              Sign in with Apple
+            </button>
+          </div>
 
           <div className="mt-14 grid grid-cols-3 gap-8 max-w-md mx-auto">
             {[

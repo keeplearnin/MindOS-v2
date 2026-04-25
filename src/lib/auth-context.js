@@ -90,6 +90,17 @@ export function AuthProvider({ children }) {
     if (error) console.error('Auth error:', error);
   };
 
+  const signInWithApple = async () => {
+    const supabase = getSupabase();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) console.error('Apple auth error:', error);
+  };
+
   const signOut = async () => {
     const supabase = getSupabase();
     localStorage.removeItem(GOOGLE_TOKEN_KEY);
@@ -118,7 +129,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, session, loading,
-      signInWithGoogle, signOut,
+      signInWithGoogle, signInWithApple, signOut,
       getGoogleToken, refreshGoogleToken,
       tokenExpired,
     }}>
