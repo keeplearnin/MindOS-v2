@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
 import {
   Inbox, CheckSquare, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
-  Sun, Menu, X, Moon, Dna, Target, Heart
+  Sun, Menu, X, Moon, Dna, Target, Heart, Settings, FileText
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
 
@@ -132,6 +132,22 @@ export default function TopNav({ onQuickAdd }) {
                         {user?.email}
                       </p>
                     </div>
+                    <Link
+                      href="/settings"
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--text)' }}
+                    >
+                      <Settings size={14} /> Settings
+                    </Link>
+                    <Link
+                      href="/privacy"
+                      onClick={() => setShowUserMenu(false)}
+                      className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:opacity-80"
+                      style={{ color: 'var(--text)' }}
+                    >
+                      <FileText size={14} /> Privacy
+                    </Link>
                     <button
                       onClick={() => { setShowUserMenu(false); signOut(); }}
                       className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:opacity-80"
@@ -198,6 +214,22 @@ export default function TopNav({ onQuickAdd }) {
 
             {/* Theme toggle & Sign out */}
             <div className="mt-auto border-t px-4 py-3 space-y-1" style={{ borderColor: 'var(--border)' }}>
+              <Link
+                href="/settings"
+                onClick={() => setShowMobileMenu(false)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <Settings size={18} /> Settings
+              </Link>
+              <Link
+                href="/privacy"
+                onClick={() => setShowMobileMenu(false)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <FileText size={18} /> Privacy
+              </Link>
               <button
                 onClick={toggleTheme}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm"

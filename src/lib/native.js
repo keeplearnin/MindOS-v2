@@ -47,11 +47,3 @@ export async function syncStatusBarToTheme(theme) {
     await StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light });
   } catch {}
 }
-
-export async function hideSplash() {
-  if (!isNative()) return;
-  try {
-    const { SplashScreen } = await import('@capacitor/splash-screen');
-    await SplashScreen.hide();
-  } catch {}
-}
