@@ -2,6 +2,7 @@
 
 import useSWR, { mutate as globalMutate } from 'swr';
 import { getSupabase } from './supabase-browser';
+import { hapticSuccess } from './native';
 
 // ─── SWR Fetcher ───────────────────────────────────────────────
 // Builds a Supabase query from a structured key and returns data.
@@ -141,6 +142,7 @@ function getNextDate(dateStr, rule, interval) {
 export async function completeTask(task) {
   // Mark done
   await updateTask(task.id, { status: 'done', completed_at: new Date().toISOString() });
+  hapticSuccess();
 
   // Spawn next occurrence if recurring
   if (task.recurrence_rule) {

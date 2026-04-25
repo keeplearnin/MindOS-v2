@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Zap } from 'lucide-react';
 import VoiceMic from './VoiceMic';
 import { createMoodEntry } from '@/lib/hooks';
+import { hapticSuccess } from '@/lib/native';
 
 const MOODS = [
   { value: 1, emoji: '😫', label: 'Awful' },
@@ -66,6 +67,7 @@ export default function MoodFAB() {
         note: note.trim() || null,
         tags: tags.length > 0 ? tags : [],
       });
+      hapticSuccess();
       setSaved(true);
       setTimeout(() => {
         handleClose();

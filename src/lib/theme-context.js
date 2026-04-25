@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { syncStatusBarToTheme } from './native';
 
 const ThemeContext = createContext({ theme: 'light', toggleTheme: () => {} });
 
@@ -26,6 +27,7 @@ export function ThemeProvider({ children }) {
     html.classList.add('theme-transition');
     html.setAttribute('data-theme', theme);
     localStorage.setItem('mindos-theme', theme);
+    syncStatusBarToTheme(theme);
     // Remove transition class after animation completes
     const timer = setTimeout(() => html.classList.remove('theme-transition'), 350);
     return () => clearTimeout(timer);

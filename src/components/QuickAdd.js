@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Zap, Calendar, Flag, Hash, ArrowRight } from 'lucide-react';
 import VoiceMic from './VoiceMic';
 import { createTask } from '@/lib/hooks';
+import { hapticImpact } from '@/lib/native';
 
 export default function QuickAdd({ open, onClose, onCreated }) {
   const [title, setTitle] = useState('');
@@ -53,6 +54,7 @@ export default function QuickAdd({ open, onClose, onCreated }) {
         due_date: dueDate || null,
       };
       await createTask(data);
+      hapticImpact('medium');
       onCreated?.();
       onClose();
     } catch (err) {

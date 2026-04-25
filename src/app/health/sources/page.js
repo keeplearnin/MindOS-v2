@@ -3,8 +3,9 @@
 import AppShell from '@/components/AppShell';
 import HealthNav from '@/components/HealthNav';
 import { useKnowledgeSources, useKnowledgeVideos, useKnowledgeArticles, useVideoStats, loadSource, loadTranscripts } from '@/lib/health-hooks';
-import { Dna, Plus, Loader2, CheckCircle2, AlertCircle, Clock, Youtube, Globe, FileText, ChevronDown, ChevronUp, Play, ExternalLink } from 'lucide-react';
+import { Dna, Plus, Loader2, CheckCircle2, AlertCircle, Clock, Youtube, Globe, FileText, ChevronDown, ChevronUp, Play, ExternalLink, Share2 } from 'lucide-react';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { nativeShare } from '@/lib/native';
 
 const STATUS_COLORS = {
   ready: 'var(--q2)',
@@ -346,6 +347,11 @@ function ArticleSourceCard({ source, expanded, onToggle }) {
                   className="flex items-center gap-1 hover:opacity-80" style={{ color: 'var(--accent)' }}>
                   <ExternalLink size={11} /> Open
                 </a>
+                <button
+                  onClick={e => { e.stopPropagation(); nativeShare({ title: article.title || source.title, url: source.url }); }}
+                  className="flex items-center gap-1 hover:opacity-80" style={{ color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                  <Share2 size={11} /> Share
+                </button>
               </div>
             </div>
           ) : (
