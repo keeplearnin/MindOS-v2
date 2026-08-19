@@ -2,10 +2,9 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Library, MessageSquare, FlaskConical, Heart, ClipboardCheck } from 'lucide-react';
+import { MessageSquare, FlaskConical, Heart, ClipboardCheck } from 'lucide-react';
 
 const tabs = [
-  { href: '/health/sources', label: 'Sources', icon: Library },
   { href: '/health/ask', label: 'Ask', icon: MessageSquare },
   { href: '/health/protocols', label: 'Protocols', icon: FlaskConical },
   { href: '/health/tracker', label: 'Tracker', icon: ClipboardCheck },
