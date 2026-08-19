@@ -30,6 +30,8 @@
   --warning-bg: #fffbeb;
   --danger: #ef4444;
   --danger-bg: #fef2f2;
+  --surface-glass: rgba(255, 255, 255, 0.66);
+  --border-glass: rgba(255, 255, 255, 0.75);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
   --shadow: 0 2px 6px 0 rgb(0 0 0 / 0.08), 0 1px 3px -1px rgb(0 0 0 / 0.06);
   --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.06);
@@ -65,6 +67,8 @@
   --warning-bg: rgba(251, 191, 36, 0.14);
   --danger: #fb7185;
   --danger-bg: rgba(251, 113, 133, 0.14);
+  --surface-glass: rgba(26, 30, 53, 0.62);
+  --border-glass: rgba(255, 255, 255, 0.09);
   --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.5);
   --shadow: 0 2px 8px 0 rgb(0 0 0 / 0.5), 0 1px 3px -1px rgb(0 0 0 / 0.4);
   --shadow-md: 0 4px 16px -2px rgb(0 0 0 / 0.6), 0 2px 6px -2px rgb(0 0 0 / 0.4);
@@ -379,21 +383,21 @@ body {
 
 /* Card */
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: var(--surface-glass);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 6px 26px rgba(15, 23, 42, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.55);
   transition: box-shadow 0.2s, border-color 0.2s;
 }
-.card:hover { box-shadow: var(--shadow); }
 [data-theme="dark"] .card {
-  border-color: var(--border);
-  box-shadow: var(--shadow-sm), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow: 0 6px 26px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
+.card:hover { box-shadow: 0 10px 34px rgba(15, 23, 42, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.55); }
 [data-theme="dark"] .card:hover {
-  border-color: #353c5e;
-  box-shadow: var(--shadow), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Quadrant borders */
@@ -693,22 +697,20 @@ html.theme-transition *::after {
 /* Translucent panels that pick up the aurora behind them. Both themes get an
    explicit background — a transparent panel over a flat page reads as nothing. */
 .glass {
-  background: rgba(255, 255, 255, 0.62);
-  backdrop-filter: blur(22px) saturate(180%);
+  background: var(--surface-glass);
   -webkit-backdrop-filter: blur(22px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(22px) saturate(180%);
+  border: 1px solid var(--border-glass);
   border-radius: 18px;
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 [data-theme="dark"] .glass {
-  background: rgba(26, 30, 53, 0.58);
-  border-color: rgba(255, 255, 255, 0.09);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .glass-soft {
   background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(14px) saturate(150%);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 14px;
 }
@@ -721,13 +723,21 @@ html.theme-transition *::after {
 .aurora { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .aurora span {
   position: absolute; display: block; border-radius: 50%;
-  filter: blur(90px); opacity: 0.5;
+  filter: blur(100px); opacity: 0.3;
 }
-[data-theme="dark"] .aurora span { opacity: 0.32; }
+[data-theme="dark"] .aurora span { opacity: 0.22; }
 @media (prefers-reduced-motion: no-preference) {
   .aurora span { animation: drift 24s ease-in-out infinite alternate; }
 }
 @keyframes drift {
   from { transform: translate3d(0, 0, 0) scale(1); }
   to   { transform: translate3d(24px, -28px, 0) scale(1.12); }
+}
+
+/* Firefox supports only the unprefixed property, and the CSS optimizer drops it
+   from the rules above. @supports survives optimization and restores it. */
+@supports (backdrop-filter: blur(1px)) {
+  .card { backdrop-filter: blur(20px) saturate(180%); }
+  .glass { backdrop-filter: blur(22px) saturate(180%); }
+  .glass-soft { backdrop-filter: blur(14px) saturate(150%); }
 }

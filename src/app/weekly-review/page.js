@@ -18,16 +18,6 @@ const getWeekString = () => {
   return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 };
 
-function Aurora() {
-  return (
-    <div className="aurora" aria-hidden="true">
-      <span style={{ width: 420, height: 420, top: -120, left: '-8%', background: 'var(--accent)' }} />
-      <span style={{ width: 360, height: 360, top: '32%', right: '-10%', background: 'var(--q2)', animationDelay: '-8s' }} />
-      <span style={{ width: 300, height: 300, bottom: '-8%', left: '28%', background: 'var(--q3)', animationDelay: '-16s' }} />
-    </div>
-  );
-}
-
 function WeeklyReviewPage() {
   const { user } = useAuth();
   const { data: tasks } = useTasks();
@@ -262,9 +252,8 @@ function WeeklyReviewPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl" style={{ position: 'relative' }}>
-        <Aurora />
-        <div style={{ position: 'relative', zIndex: 1 }} className="space-y-4">
+      <div className="max-w-3xl">
+          <div className="space-y-4">
           <div className="glass" style={{ height: 118 }} />
           <div className="glass" style={{ height: 150 }} />
           <div className="glass" style={{ height: 300 }} />
@@ -282,9 +271,8 @@ function WeeklyReviewPage() {
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
   return (
-    <div className="max-w-3xl animate-in" style={{ position: 'relative' }}>
-      <Aurora />
-      <div style={{ position: 'relative', zIndex: 1 }}>
+    <div className="max-w-3xl animate-in">
+      <div>
 
         {/* Hero */}
         <div className="glass p-5 mb-4">

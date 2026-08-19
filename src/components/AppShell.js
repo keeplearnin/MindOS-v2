@@ -6,6 +6,7 @@ import QuickAdd from './QuickAdd';
 import MoodFAB from './MoodFAB';
 import { LogIn, Apple, Loader2 } from 'lucide-react';
 import KeelMark from './KeelMark';
+import Aurora from './Aurora';
 import { useState, useCallback, useEffect } from 'react';
 
 export default function AppShell({ children }) {
@@ -139,8 +140,9 @@ export default function AppShell({ children }) {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      <Aurora />
       <TopNav onQuickAdd={() => setQuickAddOpen(true)} />
-      <main className="app-main">
+      <main className="app-main" style={{ position: 'relative', zIndex: 1 }}>
         {children}
       </main>
       <QuickAdd
