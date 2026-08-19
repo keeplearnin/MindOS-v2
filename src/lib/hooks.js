@@ -305,10 +305,11 @@ export function useHealthLogs(limit = 90) {
   return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
 }
 
-export async function upsertHealthLog({ date, habits, bp_systolic, bp_diastolic, note }) {
+export async function upsertHealthLog({ date, habits, metrics, bp_systolic, bp_diastolic, note }) {
   const supabase = getSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   const payload = { user_id: user.id, date, habits, note: note || null };
+  if (metrics) payload.metrics = metrics;
   if (bp_systolic) payload.bp_systolic = bp_systolic;
   if (bp_diastolic) payload.bp_diastolic = bp_diastolic;
 
