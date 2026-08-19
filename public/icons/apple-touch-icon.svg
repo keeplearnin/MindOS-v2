@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
-  <rect width="180" height="180" rx="40" fill="#2563eb"/>
-  <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-size="81" font-family="-apple-system,sans-serif" font-weight="700" fill="white">M</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#172554"/>
+  <rect x="126" y="128" width="78" height="256" rx="14" fill="#ffffff"/><path d="M220,238 L332,124 L388,178 L280,286 Z" fill="#ffffff"/><path d="M280,226 L388,334 L332,388 L220,274 Z" fill="#ffffff"/>
 </svg>

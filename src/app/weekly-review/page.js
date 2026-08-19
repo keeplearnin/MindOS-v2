@@ -5,12 +5,15 @@ import { useAuth } from '@/lib/auth-context';
 import { useTasks, useInbox, useProjects, useRoles } from '@/lib/hooks';
 import { getSupabase } from '@/lib/supabase-browser';
 import { useState, useEffect } from 'react';
-import { ClipboardCheck, ChevronRight, CheckCircle2, Circle, Sparkles } from 'lucide-react';
-import { format, startOfWeek } from 'date-fns';
+import Link from 'next/link';
+import {
+  ClipboardCheck, ChevronRight, ChevronLeft, CheckCircle2, Circle, Sparkles,
+  Inbox, ListChecks, Clock, FolderKanban, Lightbulb, Users, Mountain, Check, ArrowRight,
+} from 'lucide-react';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 
 const getWeekString = () => {
   const now = new Date();
-  const start = startOfWeek(now, { weekStartsOn: 1 });
   const weekNum = Math.ceil((((now - new Date(now.getFullYear(), 0, 1)) / 86400000) + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7);
   return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
 };
@@ -27,7 +30,6 @@ function WeeklyReviewPage() {
 
   const weekStr = getWeekString();
 
-  // Load or create weekly review
   useEffect(() => {
     const load = async () => {
       const supabase = getSupabase();
@@ -70,102 +72,114 @@ function WeeklyReviewPage() {
 
   const steps = [
     {
-      title: '📥 Get Clear: Empty Your Inbox',
-      subtitle: 'GTD Step 1: Process every item in your inbox',
+      title: 'Empty your inbox',
+      subtitle: 'Get clear — process every captured item',
       field: 'inbox_cleared',
+      icon: Inbox,
+      tone: 'var(--accent)',
       content: () => (
         <div>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-            You have <strong style={{ color: 'var(--accent)' }}>{inbox.length}</strong> unprocessed inbox items.
-            {inbox.length === 0 ? ' ✅ Inbox is clear!' : ' Process them before continuing.'}
-          </p>
-          {inbox.length > 0 && (
-            <a href="/inbox" className="btn btn-primary">Go to Inbox →</a>
-          )}
+          <Stat value={inbox.length} label={inbox.length === 1 ? 'unprocessed item' : 'unprocessed items'} tone={inbox.length === 0 ? 'var(--q2)' : 'var(--accent)'} />
+          {inbox.length === 0
+            ? <p className="text-sm mt-3" style={{ color: 'var(--q2)' }}>Inbox is clear. Nothing to process.</p>
+            : <StepLink href="/inbox">Go to inbox</StepLink>}
         </div>
       ),
     },
     {
-      title: '✅ Get Current: Review Next Actions',
-      subtitle: 'Are these still relevant? Update or remove stale items.',
+      title: 'Review next actions',
+      subtitle: 'Get current — are these still relevant?',
       field: 'next_actions_reviewed',
+      icon: ListChecks,
+      tone: 'var(--accent)',
       content: () => (
         <div>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-            You have <strong>{activeTasks.filter(t => t.status === 'next_action').length}</strong> next actions.
-          </p>
-          <a href="/tasks" className="btn btn-ghost">Review Tasks →</a>
+          <Stat value={activeTasks.filter(t => t.status === 'next_action').length} label="next actions" />
+          <StepLink href="/tasks">Review tasks</StepLink>
         </div>
       ),
     },
     {
-      title: '⏳ Follow Up: Waiting For',
-      subtitle: 'Check on delegated items. Send follow-ups if needed.',
+      title: 'Follow up on waiting-for',
+      subtitle: 'Check delegated items and chase what has gone quiet',
       field: 'waiting_for_followed_up',
+      icon: Clock,
+      tone: 'var(--warning)',
       content: () => (
         <div>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-            You have <strong>{waitingFor.length}</strong> items waiting on others.
-          </p>
-          {waitingFor.slice(0, 5).map(t => (
-            <div key={t.id} className="p-2 rounded-lg mb-1" style={{ background: 'var(--bg)' }}>
-              <p className="text-sm">{t.title}</p>
-              {t.waiting_for_whom && <p className="text-xs" style={{ color: 'var(--warning)' }}>Waiting on: {t.waiting_for_whom}</p>}
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: '📁 Review Projects',
-      subtitle: 'Each project needs at least one next action.',
-      field: 'projects_reviewed',
-      content: () => (
-        <div>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-            <strong>{projects.length}</strong> active projects.
-          </p>
-          {projects.map(p => {
-            const projectActions = activeTasks.filter(t => t.project_id === p.id);
-            const hasNextAction = projectActions.length > 0;
-            return (
-              <div key={p.id} className="flex items-center gap-2 p-2 rounded-lg mb-1" style={{ background: 'var(--bg)' }}>
-                {hasNextAction ? <CheckCircle2 size={14} style={{ color: 'var(--q2)' }} /> : <Circle size={14} style={{ color: 'var(--danger)' }} />}
-                <span className="text-sm flex-1">{p.title}</span>
-                <span className="text-xs" style={{ color: hasNextAction ? 'var(--q2)' : 'var(--danger)' }}>
-                  {hasNextAction ? `${projectActions.length} actions` : '⚠️ No next action!'}
-                </span>
+          <Stat value={waitingFor.length} label="items waiting on others" tone="var(--warning)" />
+          <div className="space-y-1.5 mt-3">
+            {waitingFor.slice(0, 5).map(t => (
+              <div key={t.id} className="glass-soft px-3 py-2">
+                <p className="text-sm" style={{ color: 'var(--text)' }}>{t.title}</p>
+                {t.waiting_for_whom && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--warning)' }}>Waiting on {t.waiting_for_whom}</p>
+                )}
               </div>
-            );
-          })}
-          <a href="/projects" className="btn btn-ghost mt-2">Manage Projects →</a>
+            ))}
+          </div>
         </div>
       ),
     },
     {
-      title: '💭 Someday/Maybe',
-      subtitle: 'Anything here ready to activate? Anything to remove?',
-      field: 'someday_maybe_reviewed',
+      title: 'Review projects',
+      subtitle: 'Every project needs at least one next action',
+      field: 'projects_reviewed',
+      icon: FolderKanban,
+      tone: 'var(--accent)',
       content: () => (
         <div>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-            <strong>{somedayTasks.length}</strong> someday/maybe items.
-          </p>
+          <Stat value={projects.length} label="active projects" />
+          <div className="space-y-1.5 mt-3">
+            {projects.map(p => {
+              const projectActions = activeTasks.filter(t => t.project_id === p.id);
+              const ok = projectActions.length > 0;
+              return (
+                <div key={p.id} className="glass-soft flex items-center gap-2 px-3 py-2">
+                  {ok
+                    ? <CheckCircle2 size={14} style={{ color: 'var(--q2)', flexShrink: 0 }} />
+                    : <Circle size={14} style={{ color: 'var(--danger)', flexShrink: 0 }} />}
+                  <span className="text-sm flex-1 min-w-0 truncate" style={{ color: 'var(--text)' }}>{p.title}</span>
+                  <span className="text-xs shrink-0" style={{ color: ok ? 'var(--q2)' : 'var(--danger)' }}>
+                    {ok ? `${projectActions.length} actions` : 'No next action'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <StepLink href="/tasks">Manage projects</StepLink>
         </div>
       ),
     },
     {
-      title: '🎭 Review Your Roles (7 Habits)',
-      subtitle: 'Am I neglecting any role? Set intentions for each.',
+      title: 'Someday / maybe',
+      subtitle: 'Anything ready to activate? Anything to let go?',
+      field: 'someday_maybe_reviewed',
+      icon: Lightbulb,
+      tone: 'var(--q3)',
+      content: () => (
+        <div>
+          <Stat value={somedayTasks.length} label="someday / maybe items" tone="var(--q3)" />
+          <StepLink href="/tasks">Review the list</StepLink>
+        </div>
+      ),
+    },
+    {
+      title: 'Review your roles',
+      subtitle: '7 Habits — am I neglecting any part of my life?',
       field: 'roles_reviewed',
+      icon: Users,
+      tone: 'var(--q2)',
       content: () => (
         <div className="space-y-2">
           {roles.map(role => {
             const roleTasks = activeTasks.filter(t => t.role_id === role.id);
             return (
-              <div key={role.id} className="p-3 rounded-lg" style={{ background: 'var(--bg)', borderLeft: `3px solid ${role.color}` }}>
-                <p className="font-medium text-sm" style={{ color: role.color }}>{role.name}</p>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{roleTasks.length} active tasks</p>
+              <div key={role.id} className="glass-soft px-3 py-2.5" style={{ borderLeft: `3px solid ${role.color}` }}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="font-medium text-sm" style={{ color: role.color }}>{role.name}</p>
+                  <p className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{roleTasks.length} active</p>
+                </div>
                 {role.description && <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{role.description}</p>}
               </div>
             );
@@ -174,172 +188,260 @@ function WeeklyReviewPage() {
       ),
     },
     {
-      title: '🪨 Set Big Rocks for Next Week',
-      subtitle: 'Habit 3: What are the most important things to accomplish?',
+      title: 'Set next week’s big rocks',
+      subtitle: 'Habit 3 — put first things first',
       field: 'big_rocks_set',
+      icon: Mountain,
+      tone: 'var(--q2)',
       content: () => {
         const bigRocks = activeTasks.filter(t => t.is_big_rock);
         return (
           <div>
-            <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-              Current big rocks: <strong>{bigRocks.length}</strong>
-            </p>
-            {bigRocks.map(t => (
-              <div key={t.id} className="p-2 rounded-lg mb-1" style={{ background: 'var(--bg)' }}>
-                <p className="text-sm">🪨 {t.title}</p>
-              </div>
-            ))}
-            <a href="/matrix" className="btn btn-ghost mt-2">Set Big Rocks in Matrix →</a>
+            <Stat value={bigRocks.length} label="big rocks set" tone="var(--q2)" />
+            <div className="space-y-1.5 mt-3">
+              {bigRocks.map(t => (
+                <div key={t.id} className="glass-soft px-3 py-2">
+                  <p className="text-sm" style={{ color: 'var(--text)' }}>{t.title}</p>
+                </div>
+              ))}
+            </div>
+            <StepLink href="/tasks">Set big rocks</StepLink>
           </div>
         );
       },
     },
     {
-      title: '🌟 Reflect & Celebrate',
-      subtitle: 'Acknowledge your wins and set intentions.',
+      title: 'Reflect and celebrate',
+      subtitle: 'Acknowledge the wins, then set the tone for next week',
       field: null,
+      icon: Sparkles,
+      tone: 'var(--q3)',
       content: () => (
         <div className="space-y-4">
-          <div>
-            <p className="text-sm font-medium mb-2">🏆 Wins this week ({completedThisWeek.length} tasks completed)</p>
-            <textarea
-              className="input"
-              rows={3}
-              placeholder="What went well this week?"
-              value={review?.wins || ''}
-              onChange={e => updateReview({ wins: e.target.value })}
-            />
-          </div>
-          <div>
-            <p className="text-sm font-medium mb-2">📈 What to improve?</p>
-            <textarea
-              className="input"
-              rows={3}
-              placeholder="What could be better?"
-              value={review?.improvements || ''}
-              onChange={e => updateReview({ improvements: e.target.value })}
-            />
-          </div>
-          <div>
-            <p className="text-sm font-medium mb-2">🙏 Gratitude</p>
-            <textarea
-              className="input"
-              rows={2}
-              placeholder="What are you grateful for?"
-              value={review?.gratitude || ''}
-              onChange={e => updateReview({ gratitude: e.target.value })}
-            />
-          </div>
+          <Field
+            label={`Wins this week — ${completedThisWeek.length} tasks completed`}
+            placeholder="What went well?"
+            rows={3}
+            value={review?.wins || ''}
+            onChange={v => updateReview({ wins: v })}
+          />
+          <Field
+            label="What to improve"
+            placeholder="What could be better?"
+            rows={3}
+            value={review?.improvements || ''}
+            onChange={v => updateReview({ improvements: v })}
+          />
+          <Field
+            label="Gratitude"
+            placeholder="What are you grateful for?"
+            rows={2}
+            value={review?.gratitude || ''}
+            onChange={v => updateReview({ gratitude: v })}
+          />
           <button
             onClick={() => updateReview({ completed_at: new Date().toISOString() })}
-            className="btn btn-primary w-full py-3 text-base"
+            className="btn btn-primary w-full py-3 text-base flex items-center justify-center gap-2"
           >
-            <Sparkles size={18} /> Complete Weekly Review
+            <Sparkles size={18} /> Complete weekly review
           </button>
         </div>
       ),
     },
   ];
 
-  if (loading) return <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="max-w-3xl">
+          <div className="space-y-4">
+          <div className="glass" style={{ height: 118 }} />
+          <div className="glass" style={{ height: 150 }} />
+          <div className="glass" style={{ height: 300 }} />
+        </div>
+      </div>
+    );
+  }
 
   const currentStep = steps[step];
+  const StepIcon = currentStep.icon;
+  const trackable = steps.filter(s => s.field);
+  const doneCount = trackable.filter(s => review?.[s.field]).length;
+  const pct = Math.round((doneCount / trackable.length) * 100);
+  const isDone = (i) => steps[i].field && review?.[steps[i].field];
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
   return (
     <div className="max-w-3xl animate-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <ClipboardCheck size={24} style={{ color: 'var(--accent)' }} />
-            Weekly Review
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Week of {weekStr} — GTD + 7 Habits combined review
-          </p>
-        </div>
-        {review?.completed_at && (
-          <span className="badge px-3 py-1" style={{ background: 'var(--q2)20', color: 'var(--q2)' }}>
-            ✅ Completed
-          </span>
-        )}
-      </div>
+      <div>
 
-      {/* Q2 commitment — the north star for this week */}
-      <div
-        className="card mb-6"
-        style={{
-          borderLeft: '3px solid var(--q2)',
-          background: 'color-mix(in srgb, var(--q2) 4%, var(--bg-card))',
-        }}
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <span style={{ fontSize: 16 }}>🎯</span>
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--q2)' }}>
-            This Week&rsquo;s Q2 Focus
+        {/* Hero */}
+        <div className="glass p-5 mb-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                <ClipboardCheck size={22} style={{ color: 'var(--accent)' }} />
+                Weekly Review
+              </h1>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+                {format(weekStart, 'MMM d')} – {format(endOfWeek(weekStart, { weekStartsOn: 1 }), 'MMM d, yyyy')}
+              </p>
+            </div>
+            <ProgressRing pct={pct} done={doneCount} total={trackable.length} complete={!!review?.completed_at} />
+          </div>
+          {review?.completed_at && (
+            <div className="flex items-center gap-2 mt-4 px-3 py-2 rounded-xl"
+              style={{ background: 'color-mix(in srgb, var(--q2) 14%, transparent)', color: 'var(--q2)' }}>
+              <CheckCircle2 size={15} />
+              <span className="text-sm font-medium">Review completed for this week</span>
+            </div>
+          )}
+        </div>
+
+        {/* Q2 focus */}
+        <div className="glass p-5 mb-4" style={{ borderLeft: '3px solid var(--q2)' }}>
+          <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--q2)' }}>
+            <Mountain size={15} /> This week’s Q2 focus
           </h3>
-        </div>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
-          What 2&ndash;3 Important-but-Not-Urgent priorities will you protect this week? Keep them short.
-        </p>
-        <textarea
-          className="input"
-          rows={3}
-          placeholder={'1.\n2.\n3.'}
-          value={review?.notes || ''}
-          onChange={e => updateReview({ notes: e.target.value })}
-        />
-      </div>
-
-      {/* Progress */}
-      <div className="flex gap-1 mb-6">
-        {steps.map((s, i) => (
-          <div
-            key={i}
-            className="h-1.5 flex-1 rounded-full cursor-pointer"
-            style={{ background: i <= step ? 'var(--accent)' : 'var(--border)' }}
-            onClick={() => setStep(i)}
+          <p className="text-xs mt-1 mb-3" style={{ color: 'var(--text-muted)' }}>
+            The 2–3 important-but-not-urgent priorities you will protect. Keep them short.
+          </p>
+          <textarea
+            className="input w-full"
+            rows={3}
+            placeholder={'1.\n2.\n3.'}
+            value={review?.notes || ''}
+            onChange={e => updateReview({ notes: e.target.value })}
           />
-        ))}
-      </div>
+        </div>
 
-      {/* Step indicator */}
-      <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Step {step + 1} of {steps.length}</p>
+        {/* Stepper */}
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          {steps.map((s, i) => {
+            const done = isDone(i);
+            const active = i === step;
+            return (
+              <button
+                key={i}
+                onClick={() => setStep(i)}
+                title={s.title}
+                className="shrink-0 flex items-center justify-center rounded-full text-xs font-semibold transition-all"
+                style={{
+                  width: 34, height: 34,
+                  background: active ? 'var(--accent)' : done ? 'color-mix(in srgb, var(--q2) 18%, transparent)' : 'var(--bg-card)',
+                  color: active ? '#fff' : done ? 'var(--q2)' : 'var(--text-muted)',
+                  border: `1px solid ${active ? 'var(--accent)' : done ? 'color-mix(in srgb, var(--q2) 35%, transparent)' : 'var(--border)'}`,
+                  boxShadow: active ? '0 4px 14px color-mix(in srgb, var(--accent) 45%, transparent)' : 'none',
+                }}
+              >
+                {done && !active ? <Check size={15} /> : i + 1}
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Current Step */}
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-1">{currentStep.title}</h2>
-        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{currentStep.subtitle}</p>
+        {/* Current step */}
+        <div className="glass p-5">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: `color-mix(in srgb, ${currentStep.tone} 16%, transparent)` }}>
+              <StepIcon size={19} style={{ color: currentStep.tone }} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--text)', letterSpacing: '-0.01em' }}>{currentStep.title}</h2>
+                {isDone(step) && <Check size={15} style={{ color: 'var(--q2)' }} />}
+              </div>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{currentStep.subtitle}</p>
+            </div>
+          </div>
 
-        {currentStep.content()}
+          {currentStep.content()}
 
-        <div className="flex items-center justify-between mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <button
-            onClick={() => setStep(Math.max(0, step - 1))}
-            className="btn btn-ghost"
-            disabled={step === 0}
-          >
-            ← Previous
-          </button>
-
-          {currentStep.field && (
+          <div className="flex items-center justify-between mt-6 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
             <button
-              onClick={() => {
-                updateReview({ [currentStep.field]: true });
-                setStep(Math.min(steps.length - 1, step + 1));
-              }}
-              className="btn btn-primary"
+              onClick={() => setStep(Math.max(0, step - 1))}
+              className="btn btn-ghost flex items-center gap-1"
+              disabled={step === 0}
+              style={{ opacity: step === 0 ? 0.4 : 1 }}
             >
-              Mark Done & Next →
+              <ChevronLeft size={16} /> Previous
             </button>
-          )}
 
-          {!currentStep.field && step < steps.length - 1 && (
-            <button onClick={() => setStep(step + 1)} className="btn btn-primary">
-              Next →
-            </button>
-          )}
+            {currentStep.field && (
+              <button
+                onClick={() => {
+                  updateReview({ [currentStep.field]: true });
+                  setStep(Math.min(steps.length - 1, step + 1));
+                }}
+                className="btn btn-primary flex items-center gap-1.5"
+              >
+                {isDone(step) ? 'Next' : 'Mark done'} <ChevronRight size={16} />
+              </button>
+            )}
+
+            {!currentStep.field && step < steps.length - 1 && (
+              <button onClick={() => setStep(step + 1)} className="btn btn-primary flex items-center gap-1.5">
+                Next <ChevronRight size={16} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── small pieces ─────────────────────────────────────────────
+
+function ProgressRing({ pct, done, total, complete }) {
+  const r = 26, C = 2 * Math.PI * r;
+  const tone = complete ? 'var(--q2)' : 'var(--accent)';
+  return (
+    <div className="relative shrink-0" style={{ width: 64, height: 64 }}>
+      <svg width="64" height="64" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={r} fill="none" stroke="var(--border)" strokeWidth="6" />
+        <circle
+          cx="32" cy="32" r={r} fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round"
+          strokeDasharray={C} strokeDashoffset={C * (1 - pct / 100)}
+          transform="rotate(-90 32 32)" style={{ transition: 'stroke-dashoffset .45s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-sm font-bold leading-none" style={{ color: 'var(--text)' }}>{done}</span>
+        <span className="text-[10px] leading-none mt-0.5" style={{ color: 'var(--text-muted)' }}>of {total}</span>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ value, label, tone = 'var(--text)' }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className="text-3xl font-bold tabular-nums" style={{ color: tone, letterSpacing: '-0.02em' }}>{value}</span>
+      <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</span>
+    </div>
+  );
+}
+
+function StepLink({ href, children }) {
+  return (
+    <Link href={href} className="inline-flex items-center gap-1.5 text-sm font-medium mt-3" style={{ color: 'var(--accent)' }}>
+      {children} <ArrowRight size={14} />
+    </Link>
+  );
+}
+
+function Field({ label, placeholder, rows, value, onChange }) {
+  return (
+    <div>
+      <p className="text-sm font-medium mb-1.5" style={{ color: 'var(--text)' }}>{label}</p>
+      <textarea
+        className="input w-full"
+        rows={rows}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
     </div>
   );
 }

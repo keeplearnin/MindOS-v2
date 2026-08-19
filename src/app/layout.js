@@ -3,15 +3,16 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ThemeProvider } from '@/lib/theme-context';
 
 export const metadata = {
-  title: 'MindOS — 7 Habits + GTD',
-  description: 'Your productivity operating system combining 7 Habits of Highly Effective People with Getting Things Done',
+  title: 'Keel — tasks, calendar & health protocols',
+  description: 'Keel keeps you steady: GTD tasks, calendar, and daily health protocol tracking in one place.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'MindOS',
+    title: 'Keel',
   },
   icons: {
+    icon: '/icons/icon-192.png',
     apple: '/icons/apple-touch-icon.png',
   },
 };

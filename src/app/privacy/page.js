@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Privacy Policy — MindOS',
+  title: 'Privacy Policy — Keel',
 };
 
 export default function PrivacyPage() {
@@ -9,15 +9,15 @@ export default function PrivacyPage() {
       <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '32px' }}>Last updated: April 25, 2026</p>
 
       <h2 style={{ fontSize: '1.25rem', marginTop: '32px', marginBottom: '12px' }}>What we collect</h2>
-      <p>MindOS is a personal productivity app. We collect only what is necessary to operate the features you use:</p>
+      <p>Keel is a personal productivity app. We collect only what is necessary to operate the features you use:</p>
       <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
         <li><strong>Account info</strong> — your email and name from your sign-in provider (Google).</li>
         <li><strong>Your content</strong> — tasks, inbox items, projects, calendar events, journal entries, mood logs, weekly reviews, and health-related sources you save.</li>
-        <li><strong>Google integrations (optional)</strong> — if you connect Google Calendar, Tasks, or Gmail, we request only read-only scopes needed to display your data inside MindOS. Tokens are stored encrypted by Supabase Auth.</li>
+        <li><strong>Google integrations (optional)</strong> — if you connect Google Calendar, Tasks, or Gmail, we request only read-only scopes needed to display your data inside Keel. Tokens are stored encrypted by Supabase Auth.</li>
       </ul>
 
       <h2 style={{ fontSize: '1.25rem', marginTop: '32px', marginBottom: '12px' }}>How we use it</h2>
-      <p>Your data is used solely to provide MindOS features to you. We do not sell, rent, or share your data with advertisers or unrelated third parties.</p>
+      <p>Your data is used solely to provide Keel features to you. We do not sell, rent, or share your data with advertisers or unrelated third parties.</p>
 
       <h2 style={{ fontSize: '1.25rem', marginTop: '32px', marginBottom: '12px' }}>Third parties</h2>
       <ul style={{ marginLeft: '20px', marginTop: '8px' }}>
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
       <h2 style={{ fontSize: '1.25rem', marginTop: '32px', marginBottom: '12px' }}>Contact</h2>
       <p>Questions about this policy? Email <a href="mailto:hariperugu@gmail.com" style={{ color: 'var(--accent)' }}>hariperugu@gmail.com</a>.</p>
 
-      <p style={{ marginTop: '40px' }}><a href="/" style={{ color: 'var(--accent)' }}>← Back to MindOS</a></p>
+      <p style={{ marginTop: '40px' }}><a href="/" style={{ color: 'var(--accent)' }}>← Back to Keel</a></p>
     </div>
   );
 }

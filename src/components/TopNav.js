@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
 import {
-  Inbox, CheckSquare, Calendar, ClipboardCheck, LogOut, Brain, Plus, ChevronDown,
+  Inbox, CheckSquare, Calendar, ClipboardCheck, LogOut, Plus, ChevronDown,
   Sun, Menu, X, Moon, Heart, Settings, FileText
 } from 'lucide-react';
 import { useTheme } from '@/lib/theme-context';
+import KeelMark from './KeelMark';
 
 const nav = [
   { href: '/', label: 'Today', icon: Sun },
@@ -48,10 +49,8 @@ export default function TopNav({ onQuickAdd }) {
         <div className="topnav-inner">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)' }}>
-              <Brain size={18} color="white" />
-            </div>
-            <span className="font-bold text-base text-white topnav-logo-text">MindOS</span>
+            <KeelMark size={30} bg="#ffffff" color="var(--bg-sidebar)" />
+            <span className="font-bold text-base text-white topnav-logo-text" style={{ letterSpacing: '-0.02em' }}>Keel</span>
           </Link>
 
           {/* Desktop Navigation - hidden on mobile */}

@@ -1,6 +1,6 @@
-// MindOS Service Worker — minimal, network-first
+// Keel Service Worker — minimal, network-first
 // Exists primarily for PWA installability. Data is always live from Supabase.
-const CACHE_NAME = 'mindos-v1';
+const CACHE_NAME = 'keel-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(clients.claim()));
