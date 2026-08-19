@@ -4,7 +4,30 @@
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 
+// SSRF guard: this fetch runs server-side against a user-supplied URL, so it
+// must never be aimed at internal or link-local addresses. Hostname-pattern
+// checks (not DNS resolution) — raises the bar without adding a lookup.
+function assertSafeUrl(raw) {
+  let u;
+  try { u = new URL(raw); } catch { throw new Error('Invalid URL'); }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') {
+    throw new Error('Only http(s) URLs are supported');
+  }
+  const host = u.hostname.toLowerCase();
+  const privatePatterns = [
+    /^localhost$/, /\.local$/, /\.internal$/,
+    /^127\./, /^0\./, /^10\./, /^192\.168\./, /^169\.254\./,
+    /^172\.(1[6-9]|2\d|3[01])\./,
+    /^\[?::1\]?$/, /^\[?f[cd][0-9a-f]{2}:/i, /^\[?fe80:/i,
+    /^metadata\./, /^instance-data/,
+  ];
+  if (privatePatterns.some(re => re.test(host))) {
+    throw new Error('URL points to a private or internal address');
+  }
+}
+
 export async function fetchArticle(url) {
+  assertSafeUrl(url);
   // Fetch the page
   const res = await fetch(url, {
     headers: {
