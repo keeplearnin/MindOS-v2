@@ -223,9 +223,17 @@ export function trendOf(m, prev, last, chronoAge) {
 // The daily target: hit this many of the 16 habits and the day counts as won.
 export const DAILY_GOAL = 8;
 
+const HABIT_IDS = new Set(HABITS.map(h => h.id));
+
+// Count only protocol habits — health_logs.habits may carry keys from the
+// retired wellbeing checklist, which must not move the goal.
+export function countHabits(habitsArr) {
+  if (!habitsArr) return 0;
+  return habitsArr.filter(id => HABIT_IDS.has(id)).length;
+}
+
 // Progress toward the daily goal, capped at 1 — extra habits are a bonus,
 // not a requirement, so an 8-habit day and a 16-habit day both score 100%.
 export function dayScore(habitsArr) {
-  if (!habitsArr) return 0;
-  return Math.min(habitsArr.length / DAILY_GOAL, 1);
+  return Math.min(countHabits(habitsArr) / DAILY_GOAL, 1);
 }

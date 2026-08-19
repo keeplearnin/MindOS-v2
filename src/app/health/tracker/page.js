@@ -7,7 +7,7 @@ import { useBiomarkers, upsertBiomarkers } from '@/lib/health-hooks';
 import {
   MARKERS, HABITS, METRICS, NUTRITION, WEEK, DAILY_GOAL,
   todayISO, addDays, dayIndex, parseISO,
-  markerStatus, targetText, trendOf, dayScore,
+  markerStatus, targetText, trendOf, dayScore, countHabits,
 } from '@/lib/health-tracker-data';
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Upload, Pencil, Check,
@@ -274,12 +274,21 @@ function DayEditor({ date, log, meal }) {
   const [habits, setHabits] = useState(() => log?.habits || []);
   const [metrics, setMetrics] = useState(() => log?.metrics || {});
   const [note, setNote] = useState(() => log?.note || '');
+  const [bp, setBp] = useState(() => ({ sys: log?.bp_systolic || '', dia: log?.bp_diastolic || '' }));
   const [saving, setSaving] = useState(false);
 
   const persist = async (next) => {
     setSaving(true);
     try {
-      await upsertHealthLog({ date, habits: next.habits ?? habits, metrics: next.metrics ?? metrics, note: next.note ?? note });
+      const b = next.bp ?? bp;
+      await upsertHealthLog({
+        date,
+        habits: next.habits ?? habits,
+        metrics: next.metrics ?? metrics,
+        note: next.note ?? note,
+        bp_systolic: b.sys ? parseInt(b.sys, 10) : null,
+        bp_diastolic: b.dia ? parseInt(b.dia, 10) : null,
+      });
     } catch (e) {
       console.error(e);
     } finally {
@@ -297,7 +306,7 @@ function DayEditor({ date, log, meal }) {
   const saveMetrics = () => persist({ metrics });
   const saveNote = () => persist({ note });
 
-  const done = habits.length;
+  const done = countHabits(habits);
   const goalHit = done >= DAILY_GOAL;
   const groups = [...new Set(HABITS.map(h => h.grp))];
 
@@ -365,6 +374,29 @@ function DayEditor({ date, log, meal }) {
               />
             </div>
           ))}
+        </div>
+        <div className="flex items-center gap-2 mt-2 rounded-xl px-3 py-2" style={{ background: 'var(--surface)' }}>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Blood pressure</span>
+          <input
+            type="number" inputMode="numeric" placeholder="sys" value={bp.sys}
+            onChange={e => setBp(b => ({ ...b, sys: e.target.value }))}
+            onBlur={() => persist({ bp })}
+            className="w-14 bg-transparent outline-none font-semibold text-right"
+            style={{ color: 'var(--text)' }}
+          />
+          <span style={{ color: 'var(--text-muted)' }}>/</span>
+          <input
+            type="number" inputMode="numeric" placeholder="dia" value={bp.dia}
+            onChange={e => setBp(b => ({ ...b, dia: e.target.value }))}
+            onBlur={() => persist({ bp })}
+            className="w-14 bg-transparent outline-none font-semibold"
+            style={{ color: 'var(--text)' }}
+          />
+          {bp.sys && (
+            <span className="text-xs ml-auto font-medium" style={{ color: bp.sys < 120 ? 'var(--success)' : bp.sys < 130 ? 'var(--warning)' : 'var(--danger)' }}>
+              {bp.sys < 120 ? 'Normal' : bp.sys < 130 ? 'Elevated' : 'High'}
+            </span>
+          )}
         </div>
         <textarea
           value={note}
@@ -635,6 +667,40 @@ function MarkersTab() {
   );
 }
 
+// Blood-pressure trend, moved here from the Wellbeing page — the tracker
+// owns body metrics now. Last 30 readings, systolic and diastolic.
+function BPTrendCard({ logs }) {
+  const readings = logs
+    .filter(l => l.bp_systolic && l.bp_diastolic)
+    .slice(0, 30)
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  if (readings.length === 0) return null;
+  const latest = readings[readings.length - 1];
+  const all = readings.flatMap(l => [l.bp_systolic, l.bp_diastolic]);
+  const lo = Math.min(...all) - 5, hi = Math.max(...all) + 5, span = hi - lo;
+  const W = 100, H = 36;
+  const line = (get) => readings.map((l, i) =>
+    `${(readings.length === 1 ? W / 2 : (i / (readings.length - 1)) * W).toFixed(1)},${(H - ((get(l) - lo) / span) * H).toFixed(1)}`
+  ).join(' ');
+  const sysColor = latest.bp_systolic < 120 ? 'var(--success)' : latest.bp_systolic < 130 ? 'var(--warning)' : 'var(--danger)';
+  return (
+    <div className="card">
+      <div className="flex items-baseline justify-between mb-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Blood pressure</h2>
+        <span className="text-sm">
+          <b className="text-lg" style={{ color: sysColor }}>{latest.bp_systolic}/{latest.bp_diastolic}</b>
+          <span className="text-xs ml-1.5" style={{ color: 'var(--text-muted)' }}>{latest.date}</span>
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 72 }} preserveAspectRatio="none">
+        <polyline points={line(l => l.bp_systolic)} fill="none" stroke={sysColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        <polyline points={line(l => l.bp_diastolic)} fill="none" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Last {readings.length} readings · log BP on the Today tab</p>
+    </div>
+  );
+}
+
 // ─── Trends ─────────────────────────────────────────────────────
 
 function TrendsTab() {
@@ -665,7 +731,7 @@ function TrendsTab() {
       const l = byDate[date];
       if (l && (l.habits?.length || l.note || Object.keys(l.metrics || {}).length)) {
         sum += dayScore(l.habits);
-        if ((l.habits?.length || 0) >= DAILY_GOAL) goalDays++;
+        if (countHabits(l.habits) >= DAILY_GOAL) goalDays++;
         count++;
       }
     }
@@ -675,8 +741,8 @@ function TrendsTab() {
   // Consecutive days (ending today or yesterday) with the daily goal hit.
   let goalStreak = 0;
   {
-    let cur = (byDate[t]?.habits?.length || 0) >= DAILY_GOAL ? t : addDays(t, -1);
-    while ((byDate[cur]?.habits?.length || 0) >= DAILY_GOAL) { goalStreak++; cur = addDays(cur, -1); }
+    let cur = countHabits(byDate[t]?.habits) >= DAILY_GOAL ? t : addDays(t, -1);
+    while (countHabits(byDate[cur]?.habits) >= DAILY_GOAL) { goalStreak++; cur = addDays(cur, -1); }
   }
 
   const streaks = HABITS.map(h => {
@@ -737,6 +803,8 @@ function TrendsTab() {
           ))}
         </div>
       </div>
+
+      <BPTrendCard logs={logs} />
 
       <div className="card">
         <h2 className="text-sm font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>Current streaks</h2>
