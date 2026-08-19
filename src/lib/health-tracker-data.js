@@ -58,9 +58,12 @@ export const HABITS = [
 ];
 
 export const METRICS = [
-  { id: 'weight',   label: 'Weight',          unit: 'kg', step: '0.1' },
+  { id: 'kcal',     label: 'Calories',        unit: 'kcal', step: '10' },
   { id: 'proteinG', label: 'Protein',         unit: 'g',  step: '1' },
+  { id: 'fatG',     label: 'Fat',             unit: 'g',  step: '1' },
+  { id: 'carbG',    label: 'Carbs',           unit: 'g',  step: '1' },
   { id: 'fiberG',   label: 'Fiber',           unit: 'g',  step: '1' },
+  { id: 'weight',   label: 'Weight',          unit: 'kg', step: '0.1' },
   { id: 'sleepH',   label: 'Sleep',           unit: 'h',  step: '0.25' },
   { id: 'stepsN',   label: 'Steps',           unit: '',   step: '100' },
   { id: 'fbg',      label: 'Fasting glucose', unit: 'mg/dL', step: '1' },
@@ -163,6 +166,34 @@ export const WEEK = [
     ] },
 ];
 
+// ── Macros ──
+// Each daily macro target, and the metric that feeds it. mealKey maps onto the
+// per-dinner macros in WEEK.
+export const MACROS = [
+  { id: 'kcal',     label: 'Calories', unit: 'kcal', target: NUTRITION.calories, mealKey: 'kcal', tone: 'var(--accent)' },
+  { id: 'proteinG', label: 'Protein',  unit: 'g',    target: NUTRITION.protein,  mealKey: 'p',    tone: 'var(--q2)' },
+  { id: 'fatG',     label: 'Fat',      unit: 'g',    target: NUTRITION.fats,     mealKey: 'f',    tone: 'var(--q3)' },
+  { id: 'carbG',    label: 'Carbs',    unit: 'g',    target: NUTRITION.carbs,    mealKey: 'c',    tone: 'var(--accent-light)' },
+];
+
+// The protocol dinner's macros count automatically once its habit is ticked —
+// the plan already knows exactly what that meal contains, so asking anyone to
+// re-type it would be duplicate entry. Returns null when it isn't ticked.
+export function dinnerContribution(habitsArr, dateISO) {
+  if (!habitsArr || !habitsArr.includes('dinner')) return null;
+  return WEEK[dayIndex(dateISO)];
+}
+
+// Logged value + whatever tonight's dinner contributes. Non-destructive: the
+// stored metric always holds only what the user typed.
+export function macroTotal(macro, metrics, habitsArr, dateISO) {
+  const raw = Number(metrics?.[macro.id]);
+  const logged = isNaN(raw) ? 0 : raw;
+  const meal = dinnerContribution(habitsArr, dateISO);
+  const fromMeal = meal ? Number(meal[macro.mealKey]) || 0 : 0;
+  return { logged, fromMeal, total: logged + fromMeal };
+}
+
 // ── Date helpers (local calendar days, Monday = 0 … Sunday = 6) ──
 
 export function iso(d) {
@@ -235,10 +266,13 @@ export const METRIC_HABIT_LINKS = [
   { metric: 'sleepH',   habit: 'sleep',   min: 7 },
 ];
 
-export function autoHabits(metrics, habits) {
+export function autoHabits(metrics, habits, dateISO) {
   let next = habits;
   for (const link of METRIC_HABIT_LINKS) {
-    const v = Number(metrics?.[link.metric]);
+    const macro = MACROS.find(m => m.id === link.metric);
+    const v = macro && dateISO
+      ? macroTotal(macro, metrics, next, dateISO).total
+      : Number(metrics?.[link.metric]);
     if (!isNaN(v) && v >= link.min && !next.includes(link.habit)) {
       next = [...next, link.habit];
     }
