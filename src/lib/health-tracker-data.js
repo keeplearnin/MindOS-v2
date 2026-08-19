@@ -37,8 +37,8 @@ export const MARKERS = [
 
 export const HABITS = [
   { grp: 'Nutrition', id: 'dinner',    label: 'Ate the protocol dinner',         hint: 'or an equivalent build: lean protein + 2 veg + whole grain', targets: ['ldl_c', 'hba1c', 'hscrp'] },
-  { grp: 'Nutrition', id: 'protein',   label: 'Hit ~110 g protein',              hint: 'spread across meals, not back-loaded', targets: ['bioage', 'hba1c'] },
-  { grp: 'Nutrition', id: 'fiber',     label: '30 g+ fiber',                     hint: 'the single biggest lever on LDL and post-meal glucose', targets: ['ldl_c', 'ldl_p', 'glucose', 'hba1c'] },
+  { grp: 'Nutrition', id: 'protein',   label: 'Hit ~110 g protein',              hint: 'auto-checks when you log 110 g+ below', targets: ['bioage', 'hba1c'] },
+  { grp: 'Nutrition', id: 'fiber',     label: '30 g+ fiber',                     hint: 'the biggest lever on LDL and glucose · auto-checks at 30 g logged', targets: ['ldl_c', 'ldl_p', 'glucose', 'hba1c'] },
   { grp: 'Nutrition', id: 'nosugar',   label: 'No added sugar or refined grain', hint: 'includes juice, sauces, "healthy" bars', targets: ['hba1c', 'glucose', 'trig'] },
   { grp: 'Nutrition', id: 'omega3',    label: 'Omega-3 source',                  hint: 'fatty fish, or 2 g combined EPA/DHA', targets: ['omega3', 'hscrp', 'ldl_small'] },
   { grp: 'Nutrition', id: 'plants',    label: 'Colorful veg at 2+ meals',        hint: 'polyphenols and potassium, not just volume', targets: ['hscrp', 'ldl_c'] },
@@ -51,9 +51,9 @@ export const HABITS = [
   { grp: 'Movement', id: 'zone2',    label: '30+ min zone 2 cardio', hint: 'conversational pace — the LDL-particle and A1c lever', targets: ['ldl_p', 'hba1c', 'bioage'] },
   { grp: 'Movement', id: 'strength', label: 'Strength training',    hint: 'muscle is glucose disposal', targets: ['hba1c', 'insulin', 'bioage'] },
   { grp: 'Movement', id: 'walk',     label: '10 min walk after dinner', hint: 'blunts the post-meal glucose spike', targets: ['glucose', 'hba1c'] },
-  { grp: 'Movement', id: 'steps',    label: '8,000+ steps',         hint: '', targets: ['ldl_c', 'glucose'] },
+  { grp: 'Movement', id: 'steps',    label: '8,000+ steps',         hint: 'auto-checks when you log steps below', targets: ['ldl_c', 'glucose'] },
 
-  { grp: 'Recovery', id: 'sleep',  label: '7+ hours sleep',        hint: 'short sleep drives CRP and fasting glucose up', targets: ['hscrp', 'glucose', 'bioage'] },
+  { grp: 'Recovery', id: 'sleep',  label: '7+ hours sleep',        hint: 'short sleep drives CRP and glucose up · auto-checks at 7 h logged', targets: ['hscrp', 'glucose', 'bioage'] },
   { grp: 'Recovery', id: 'stress', label: '10 min stress practice', hint: 'breathwork, meditation, or a phone-free walk', targets: ['hscrp'] },
 ];
 
@@ -224,6 +224,27 @@ export function trendOf(m, prev, last, chronoAge) {
 export const DAILY_GOAL = 8;
 
 const HABIT_IDS = new Set(HABITS.map(h => h.id));
+
+// Metrics that complete a habit on their own — entering the number is the
+// tick. Metrics can auto-check a habit, never un-check one: a below-threshold
+// value leaves any manual tick alone.
+export const METRIC_HABIT_LINKS = [
+  { metric: 'proteinG', habit: 'protein', min: 110 },
+  { metric: 'fiberG',   habit: 'fiber',   min: 30 },
+  { metric: 'stepsN',   habit: 'steps',   min: 8000 },
+  { metric: 'sleepH',   habit: 'sleep',   min: 7 },
+];
+
+export function autoHabits(metrics, habits) {
+  let next = habits;
+  for (const link of METRIC_HABIT_LINKS) {
+    const v = Number(metrics?.[link.metric]);
+    if (!isNaN(v) && v >= link.min && !next.includes(link.habit)) {
+      next = [...next, link.habit];
+    }
+  }
+  return next;
+}
 
 // Count only protocol habits — health_logs.habits may carry keys from the
 // retired wellbeing checklist, which must not move the goal.

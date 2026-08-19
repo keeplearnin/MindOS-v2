@@ -7,7 +7,7 @@ import { useBiomarkers, upsertBiomarkers } from '@/lib/health-hooks';
 import {
   MARKERS, HABITS, METRICS, NUTRITION, WEEK, DAILY_GOAL,
   todayISO, addDays, dayIndex, parseISO,
-  markerStatus, targetText, trendOf, dayScore, countHabits,
+  markerStatus, targetText, trendOf, dayScore, countHabits, autoHabits,
 } from '@/lib/health-tracker-data';
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Upload, Pencil, Check,
@@ -16,7 +16,7 @@ import {
 import { useMemo, useRef, useState } from 'react';
 
 const CHRONO_AGE_KEY = 'fh-tracker-chrono-age';
-const TABS = ['Today', 'Protocol', 'Markers', 'Trends'];
+const TABS = ['Today', 'Plan', 'Markers', 'Trends'];
 
 export default function TrackerPage() {
   return (
@@ -61,7 +61,7 @@ function TrackerContent() {
       </div>
 
       {tab === 'Today' && <TodayTab />}
-      {tab === 'Protocol' && <ProtocolTab />}
+      {tab === 'Plan' && <ProtocolTab />}
       {tab === 'Markers' && <MarkersTab />}
       {tab === 'Trends' && <TrendsTab />}
     </div>
@@ -303,7 +303,11 @@ function DayEditor({ date, log, meal }) {
   };
 
   const setMetric = (id, value) => setMetrics(m => ({ ...m, [id]: value }));
-  const saveMetrics = () => persist({ metrics });
+  const saveMetrics = () => {
+    const synced = autoHabits(metrics, habits);
+    if (synced !== habits) setHabits(synced);
+    persist({ metrics, habits: synced });
+  };
   const saveNote = () => persist({ note });
 
   const done = countHabits(habits);
@@ -356,8 +360,6 @@ function DayEditor({ date, log, meal }) {
         </div>
       </div>
 
-      <MealRow meal={meal} />
-
       <div className="card">
         <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Daily metrics</h2>
         <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(102px, 1fr))' }}>
@@ -408,6 +410,8 @@ function DayEditor({ date, log, meal }) {
         />
         {saving && <div className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}><Loader2 size={11} className="animate-spin" /> Saving…</div>}
       </div>
+
+      <MealRow meal={meal} />
     </div>
   );
 }
