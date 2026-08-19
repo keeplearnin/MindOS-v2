@@ -7,6 +7,7 @@ const nextConfig = {
       { source: '/projects', destination: '/tasks', permanent: true },
       { source: '/email', destination: '/inbox', permanent: true },
       { source: '/wellbeing', destination: '/health/wellbeing', permanent: true },
+      { source: '/health/sources', destination: '/health/ask', permanent: true },
       { source: '/journal', destination: '/', permanent: true },
     ];
   },
