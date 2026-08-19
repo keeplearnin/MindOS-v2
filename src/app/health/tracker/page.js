@@ -5,13 +5,14 @@ import HealthNav from '@/components/HealthNav';
 import { useHealthLogs, upsertHealthLog } from '@/lib/hooks';
 import { useBiomarkers, upsertBiomarkers } from '@/lib/health-hooks';
 import {
-  MARKERS, HABITS, METRICS, NUTRITION, WEEK, DAILY_GOAL,
+  MARKERS, HABITS, METRICS, NUTRITION, WEEK, DAILY_GOAL, MACROS,
   todayISO, addDays, dayIndex, parseISO,
   markerStatus, targetText, trendOf, dayScore, countHabits, autoHabits,
+  macroTotal, dinnerContribution,
 } from '@/lib/health-tracker-data';
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Upload, Pencil, Check,
-  UtensilsCrossed, ChevronDown, ChevronUp,
+  UtensilsCrossed, ChevronDown, ChevronUp, Flame, Target,
 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 
@@ -304,7 +305,7 @@ function DayEditor({ date, log, meal }) {
 
   const setMetric = (id, value) => setMetrics(m => ({ ...m, [id]: value }));
   const saveMetrics = () => {
-    const synced = autoHabits(metrics, habits);
+    const synced = autoHabits(metrics, habits, date);
     if (synced !== habits) setHabits(synced);
     persist({ metrics, habits: synced });
   };
@@ -316,32 +317,49 @@ function DayEditor({ date, log, meal }) {
 
   return (
     <div className="space-y-4">
-      <div className="card" style={{ padding: '16px' }}>
-        <div className="flex items-baseline justify-between">
-          <div style={{ color: 'var(--text)' }}>
-            <span className="text-3xl font-bold tabular-nums">{done}</span>
-            <span className="text-lg font-medium" style={{ color: 'var(--text-muted)' }}> / {DAILY_GOAL}</span>
-          </div>
-          <span className="text-sm font-medium" style={{ color: goalHit ? 'var(--success)' : 'var(--text-muted)' }}>
-            {goalHit
-              ? `Goal hit${done > DAILY_GOAL ? ` · +${done - DAILY_GOAL} extra` : ''}`
-              : `${DAILY_GOAL - done} more to hit today's goal`}
+      <div className="card">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+            <Target size={14} /> Daily goal
+          </h2>
+          <span className="text-xs font-medium" style={{ color: goalHit ? 'var(--success)' : 'var(--text-muted)' }}>
+            {goalHit ? 'Complete' : `${Math.round((done / DAILY_GOAL) * 100)}%`}
           </span>
         </div>
-        <div className="flex gap-1 mt-3">
-          {Array.from({ length: DAILY_GOAL }, (_, i) => (
-            <span
-              key={i}
-              className="flex-1 rounded-full"
-              style={{
-                height: 6,
-                background: i < Math.min(done, DAILY_GOAL)
-                  ? (goalHit ? 'var(--success)' : 'var(--accent)')
-                  : 'var(--surface)',
-                transition: 'background .25s',
-              }}
-            />
-          ))}
+
+        <div className="flex items-baseline gap-2 mb-3">
+          <span className="text-4xl font-bold tabular-nums"
+            style={{ color: goalHit ? 'var(--success)' : 'var(--text)', letterSpacing: '-0.03em', transition: 'color .3s' }}>
+            {done}
+          </span>
+          <span className="text-sm" style={{ color: 'var(--text-muted)' }}>/ {DAILY_GOAL} habits</span>
+          <span className="text-xs ml-auto text-right" style={{ color: goalHit ? 'var(--success)' : 'var(--text-muted)' }}>
+            {goalHit
+              ? (done > DAILY_GOAL ? `Goal hit · +${done - DAILY_GOAL} bonus` : 'Goal hit')
+              : `${DAILY_GOAL - done} to go`}
+          </span>
+        </div>
+
+        <div className="flex gap-1.5">
+          {Array.from({ length: DAILY_GOAL }, (_, i) => {
+            const filled = i < Math.min(done, DAILY_GOAL);
+            return (
+              <span
+                key={i}
+                className="flex-1 rounded-full"
+                style={{
+                  height: 8,
+                  background: filled
+                    ? (goalHit
+                        ? 'linear-gradient(180deg, color-mix(in srgb, var(--success) 82%, white), var(--success))'
+                        : 'linear-gradient(180deg, var(--accent-light), var(--accent))')
+                    : 'var(--surface)',
+                  boxShadow: filled ? '0 1px 5px color-mix(in srgb, var(--accent) 34%, transparent)' : 'none',
+                  transition: 'background .3s, box-shadow .3s',
+                }}
+              />
+            );
+          })}
         </div>
       </div>
 
@@ -359,6 +377,8 @@ function DayEditor({ date, log, meal }) {
           ))}
         </div>
       </div>
+
+      <FuelCard metrics={metrics} habits={habits} date={date} />
 
       <div className="card">
         <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Daily metrics</h2>
@@ -412,6 +432,96 @@ function DayEditor({ date, log, meal }) {
       </div>
 
       <MealRow meal={meal} />
+    </div>
+  );
+}
+
+// ─── Fuel ───────────────────────────────────────────────────────
+
+// One macro's progress. Two segments: what was logged by hand, and what the
+// protocol dinner contributed, so the automatic part is always visible rather
+// than silently inflating the number.
+function MacroBar({ macro, metrics, habits, date, hero }) {
+  const { logged, fromMeal, total } = macroTotal(macro, metrics, habits, date);
+  const target = macro.target || 1;
+  const over = total > target;
+  const loggedPct = Math.max(0, Math.min(100, (logged / target) * 100));
+  const mealPct = Math.max(0, Math.min(100 - loggedPct, (fromMeal / target) * 100));
+  const tone = over ? 'var(--warning)' : macro.tone;
+  const h = hero ? 10 : 7;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3 mb-1">
+        <span className={hero ? 'text-sm font-medium' : 'text-xs'} style={{ color: hero ? 'var(--text)' : 'var(--text-secondary)' }}>
+          {macro.label}
+        </span>
+        <span className="text-xs tabular-nums shrink-0" style={{ color: over ? 'var(--warning)' : 'var(--text-muted)' }}>
+          <b style={{ color: over ? 'var(--warning)' : 'var(--text)' }}>{Math.round(total).toLocaleString()}</b>
+          {' / '}{target.toLocaleString()} {macro.unit}
+        </span>
+      </div>
+      <div style={{ height: h, borderRadius: h, background: 'var(--surface)', overflow: 'hidden', display: 'flex' }}>
+        <span style={{ width: `${loggedPct}%`, background: tone, transition: 'width .35s ease' }} />
+        <span style={{ width: `${mealPct}%`, background: tone, opacity: 0.42, transition: 'width .35s ease' }} />
+      </div>
+    </div>
+  );
+}
+
+function FuelCard({ metrics, habits, date }) {
+  const [calories, ...rest] = MACROS;
+  const cal = macroTotal(calories, metrics, habits, date);
+  const meal = dinnerContribution(habits, date);
+  const pct = Math.round((cal.total / calories.target) * 100);
+  const over = cal.total > calories.target;
+  const remaining = calories.target - cal.total;
+
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+          <Flame size={14} /> Fuel
+        </h2>
+        <span className="text-xs font-medium tabular-nums" style={{ color: over ? 'var(--warning)' : 'var(--text-muted)' }}>
+          {pct}% of target
+        </span>
+      </div>
+
+      <div className="flex items-baseline gap-2 mb-2">
+        <span className="text-4xl font-bold tabular-nums" style={{ color: 'var(--text)', letterSpacing: '-0.03em' }}>
+          {Math.round(cal.total).toLocaleString()}
+        </span>
+        <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          / {calories.target.toLocaleString()} kcal
+        </span>
+        <span className="text-xs ml-auto" style={{ color: over ? 'var(--warning)' : 'var(--text-muted)' }}>
+          {over ? `${Math.abs(Math.round(remaining)).toLocaleString()} over` : `${Math.round(remaining).toLocaleString()} left`}
+        </span>
+      </div>
+
+      <div style={{ height: 10, borderRadius: 10, background: 'var(--surface)', overflow: 'hidden', display: 'flex' }}>
+        <span style={{
+          width: `${Math.max(0, Math.min(100, (cal.logged / calories.target) * 100))}%`,
+          background: over ? 'var(--warning)' : calories.tone, transition: 'width .35s ease',
+        }} />
+        <span style={{
+          width: `${Math.max(0, Math.min(100 - (cal.logged / calories.target) * 100, (cal.fromMeal / calories.target) * 100))}%`,
+          background: over ? 'var(--warning)' : calories.tone, opacity: 0.42, transition: 'width .35s ease',
+        }} />
+      </div>
+
+      <div className="space-y-2.5 mt-4">
+        {rest.map(m => (
+          <MacroBar key={m.id} macro={m} metrics={metrics} habits={habits} date={date} />
+        ))}
+      </div>
+
+      <p className="text-xs mt-3 pt-3" style={{ color: 'var(--text-muted)', borderTop: '1px solid var(--border)' }}>
+        {meal
+          ? <>The lighter part of each bar is tonight&rsquo;s protocol dinner ({meal.kcal} kcal), counted automatically. Log everything else below.</>
+          : <>Log what you ate below. Ticking tonight&rsquo;s protocol dinner adds its macros for you.</>}
+      </p>
     </div>
   );
 }
