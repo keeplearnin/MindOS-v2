@@ -81,6 +81,37 @@ export function useHealthQueries(limit = 50) {
   return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
 }
 
+// ─── Biomarkers (Function Health results) ──────────────────────
+
+export function useBiomarkers() {
+  const key = ['health_biomarkers_list'];
+  const { data, error, isLoading, mutate } = useSWR(key, async () => {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('health_biomarkers')
+      .select('*')
+      .order('date', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }, { dedupingInterval: 5000 });
+
+  return { data: data || [], loading: isLoading, error, refetch: () => mutate() };
+}
+
+export async function upsertBiomarkers(rows) {
+  // rows: [{ marker_id, value, date }]
+  const supabase = getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  const payload = rows.map(r => ({ user_id: user.id, marker_id: r.marker_id, value: r.value, date: r.date }));
+  const { data, error } = await supabase
+    .from('health_biomarkers')
+    .upsert(payload, { onConflict: 'user_id,marker_id,date' })
+    .select();
+  if (error) throw error;
+  invalidate('health_biomarkers_list');
+  return data;
+}
+
 export function useHealthProtocols(status = null) {
   const key = ['health_protocols_list', status];
   const { data, error, isLoading, mutate } = useSWR(key, async () => {
