@@ -220,7 +220,12 @@ export function trendOf(m, prev, last, chronoAge) {
   return 'flat';
 }
 
+// The daily target: hit this many of the 16 habits and the day counts as won.
+export const DAILY_GOAL = 8;
+
+// Progress toward the daily goal, capped at 1 — extra habits are a bonus,
+// not a requirement, so an 8-habit day and a 16-habit day both score 100%.
 export function dayScore(habitsArr) {
   if (!habitsArr) return 0;
-  return habitsArr.length / HABITS.length;
+  return Math.min(habitsArr.length / DAILY_GOAL, 1);
 }

@@ -21,6 +21,8 @@ export default function HealthNav() {
       border: '1px solid var(--border)',
       borderRadius: 12,
       padding: 4,
+      overflowX: 'auto',
+      scrollbarWidth: 'none',
     }}>
       {tabs.map(tab => {
         const active = pathname === tab.href;
@@ -33,8 +35,9 @@ export default function HealthNav() {
             style={{
               background: active ? 'var(--accent)' : 'transparent',
               color: active ? 'white' : 'var(--text-muted)',
-              flex: 1,
+              flex: '1 0 auto',
               justifyContent: 'center',
+              whiteSpace: 'nowrap',
             }}
           >
             <Icon size={16} />

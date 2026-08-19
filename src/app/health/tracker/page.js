@@ -5,7 +5,7 @@ import HealthNav from '@/components/HealthNav';
 import { useHealthLogs, upsertHealthLog } from '@/lib/hooks';
 import { useBiomarkers, upsertBiomarkers } from '@/lib/health-hooks';
 import {
-  MARKERS, HABITS, METRICS, NUTRITION, WEEK,
+  MARKERS, HABITS, METRICS, NUTRITION, WEEK, DAILY_GOAL,
   todayISO, addDays, dayIndex, parseISO,
   markerStatus, targetText, trendOf, dayScore,
 } from '@/lib/health-tracker-data';
@@ -142,11 +142,81 @@ function MealCard({ meal, highlight, showDay }) {
   );
 }
 
+// One-line dinner row for the Today tab — expands to the full card on tap.
+function MealRow({ meal }) {
+  const [open, setOpen] = useState(false);
+  if (open) {
+    return (
+      <div>
+        <MealCard meal={meal} />
+        <button
+          onClick={() => setOpen(false)}
+          className="text-xs font-medium mt-1 px-1"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          Collapse
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={() => setOpen(true)}
+      className="card w-full flex items-center gap-3 text-left"
+      style={{ padding: '12px 16px' }}
+    >
+      <UtensilsCrossed size={16} className="shrink-0" style={{ color: 'var(--text-muted)' }} />
+      <span className="flex-1 min-w-0">
+        <span className="text-sm font-medium block truncate" style={{ color: 'var(--text)' }}>{meal.name}</span>
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Tonight&apos;s dinner · {meal.kcal} kcal · {meal.p} g protein</span>
+      </span>
+      <ChevronDown size={16} className="shrink-0" style={{ color: 'var(--text-muted)' }} />
+    </button>
+  );
+}
+
 function Macro({ label, value }) {
   return (
     <div>
       <div className="text-base font-semibold" style={{ color: 'var(--text)' }}>{value}</div>
       <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</div>
+    </div>
+  );
+}
+
+// One-line habit row. Hint and biomarker tags stay behind the chevron so
+// the daily checklist reads as a list, not a lesson.
+function HabitRow({ habit, on, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = habit.hint || habit.targets.length > 0;
+  return (
+    <div className="rounded-lg" style={{ background: on ? 'var(--accent-bg)' : 'transparent' }}>
+      <div className="flex items-center gap-3 py-2 px-2">
+        <input
+          type="checkbox" checked={on} onChange={onToggle}
+          className="shrink-0" style={{ accentColor: 'var(--accent)', width: 18, height: 18 }}
+        />
+        <button onClick={onToggle} className="flex-1 min-w-0 text-left text-sm" style={{ color: 'var(--text)', fontWeight: on ? 500 : 400 }}>
+          {habit.label}
+        </button>
+        {hasDetails && (
+          <button onClick={() => setOpen(o => !o)} className="shrink-0 p-1" style={{ color: 'var(--text-muted)' }} aria-label="Details">
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="px-9 pb-2">
+          {habit.hint && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{habit.hint}</p>}
+          <div className="flex flex-wrap gap-1 mt-1">
+            {habit.targets.map(t => (
+              <span key={t} className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--surface)', color: 'var(--text-muted)' }}>
+                {MARKERS.find(m => m.id === t)?.name || t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -228,75 +298,56 @@ function DayEditor({ date, log, meal }) {
   const saveNote = () => persist({ note });
 
   const done = habits.length;
-  const pct = Math.round((done / HABITS.length) * 100);
-  const circumference = 2 * Math.PI * 33;
+  const goalHit = done >= DAILY_GOAL;
   const groups = [...new Set(HABITS.map(h => h.grp))];
-  const missed = HABITS.filter(h => !habits.includes(h.id));
 
   return (
     <div className="space-y-4">
-      <div className="card flex items-center gap-4">
-        <svg width="76" height="76" viewBox="0 0 80 80" className="shrink-0">
-          <circle cx="40" cy="40" r="33" fill="none" stroke="var(--surface)" strokeWidth="9" />
-          <circle
-            cx="40" cy="40" r="33" fill="none" stroke="var(--accent)" strokeWidth="9"
-            strokeLinecap="round" strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - pct / 100)}
-            transform="rotate(-90 40 40)" style={{ transition: 'stroke-dashoffset .4s' }}
-          />
-          <text x="40" y="47" textAnchor="middle" style={{ font: '600 20px inherit', fill: 'var(--text)' }}>{pct}%</text>
-        </svg>
-        <div className="min-w-0">
-          <div className="font-semibold" style={{ color: 'var(--text)' }}>
-            {done === 0 ? 'Nothing logged yet' : `${done} of ${HABITS.length} habits`}
+      <div className="card" style={{ padding: '16px' }}>
+        <div className="flex items-baseline justify-between">
+          <div style={{ color: 'var(--text)' }}>
+            <span className="text-3xl font-bold tabular-nums">{done}</span>
+            <span className="text-lg font-medium" style={{ color: 'var(--text-muted)' }}> / {DAILY_GOAL}</span>
           </div>
-          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {done === 0
-              ? 'Tick what you actually did — partial days still count.'
-              : missed.length === 0
-                ? 'Full protocol day.'
-                : `Still open: ${missed.slice(0, 3).map(h => h.label.toLowerCase()).join(', ')}${missed.length > 3 ? ` +${missed.length - 3} more` : ''}`}
-          </div>
+          <span className="text-sm font-medium" style={{ color: goalHit ? 'var(--success)' : 'var(--text-muted)' }}>
+            {goalHit
+              ? `Goal hit${done > DAILY_GOAL ? ` · +${done - DAILY_GOAL} extra` : ''}`
+              : `${DAILY_GOAL - done} more to hit today's goal`}
+          </span>
+        </div>
+        <div className="flex gap-1 mt-3">
+          {Array.from({ length: DAILY_GOAL }, (_, i) => (
+            <span
+              key={i}
+              className="flex-1 rounded-full"
+              style={{
+                height: 6,
+                background: i < Math.min(done, DAILY_GOAL)
+                  ? (goalHit ? 'var(--success)' : 'var(--accent)')
+                  : 'var(--surface)',
+                transition: 'background .25s',
+              }}
+            />
+          ))}
         </div>
       </div>
 
-      <MealCard meal={meal} />
-
       <div className="card">
-        <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Protocol habits</h2>
         <div className="space-y-4">
           {groups.map(g => (
             <div key={g}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>{g}</p>
-              <div className="space-y-1">
-                {HABITS.filter(h => h.grp === g).map(h => {
-                  const on = habits.includes(h.id);
-                  return (
-                    <label
-                      key={h.id}
-                      className="flex items-start gap-3 p-2.5 rounded-xl cursor-pointer"
-                      style={{ background: on ? 'var(--accent-bg)' : 'transparent', border: `1px solid ${on ? 'var(--accent-light)' : 'transparent'}` }}
-                    >
-                      <input type="checkbox" checked={on} onChange={() => toggleHabit(h.id)} className="mt-0.5" style={{ accentColor: 'var(--accent)' }} />
-                      <span className="min-w-0">
-                        <b className="text-sm font-medium" style={{ color: 'var(--text)' }}>{h.label}</b>
-                        {h.hint && <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{h.hint}</div>}
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {h.targets.map(t => (
-                            <span key={t} className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--surface)', color: 'var(--text-muted)' }}>
-                              {MARKERS.find(m => m.id === t)?.name || t}
-                            </span>
-                          ))}
-                        </div>
-                      </span>
-                    </label>
-                  );
-                })}
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--text-muted)' }}>{g}</p>
+              <div>
+                {HABITS.filter(h => h.grp === g).map(h => (
+                  <HabitRow key={h.id} habit={h} on={habits.includes(h.id)} onToggle={() => toggleHabit(h.id)} />
+                ))}
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <MealRow meal={meal} />
 
       <div className="card">
         <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Daily metrics</h2>
@@ -608,14 +659,25 @@ function TrendsTab() {
   }, [byDate, t]);
 
   const rolling = [7, 30, 90].map(n => {
-    let sum = 0, count = 0;
+    let sum = 0, count = 0, goalDays = 0;
     for (let i = 0; i < n; i++) {
       const date = addDays(t, -i);
       const l = byDate[date];
-      if (l && (l.habits?.length || l.note || Object.keys(l.metrics || {}).length)) { sum += dayScore(l.habits); count++; }
+      if (l && (l.habits?.length || l.note || Object.keys(l.metrics || {}).length)) {
+        sum += dayScore(l.habits);
+        if ((l.habits?.length || 0) >= DAILY_GOAL) goalDays++;
+        count++;
+      }
     }
-    return { n, pct: count ? Math.round((sum / count) * 100) : 0, count };
+    return { n, pct: count ? Math.round((sum / count) * 100) : 0, count, goalDays };
   });
+
+  // Consecutive days (ending today or yesterday) with the daily goal hit.
+  let goalStreak = 0;
+  {
+    let cur = (byDate[t]?.habits?.length || 0) >= DAILY_GOAL ? t : addDays(t, -1);
+    while ((byDate[cur]?.habits?.length || 0) >= DAILY_GOAL) { goalStreak++; cur = addDays(cur, -1); }
+  }
 
   const streaks = HABITS.map(h => {
     let n = 0;
@@ -660,12 +722,17 @@ function TrendsTab() {
       </div>
 
       <div className="card">
-        <h2 className="text-sm font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--text-muted)' }}>Rolling adherence</h2>
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Daily goal · {DAILY_GOAL} habits</h2>
+          <span className="text-sm font-semibold" style={{ color: goalStreak > 0 ? 'var(--success)' : 'var(--text-muted)' }}>
+            {goalStreak > 0 ? `${goalStreak}-day streak` : 'no streak'}
+          </span>
+        </div>
         <div className="flex gap-6 flex-wrap">
           {rolling.map(r => (
             <div key={r.n}>
-              <div className="text-base font-semibold" style={{ color: 'var(--text)' }}>{r.pct}%</div>
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.n} days <span className="opacity-70">({r.count} logged)</span></div>
+              <div className="text-base font-semibold" style={{ color: 'var(--text)' }}>{r.goalDays}<span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}> days hit</span></div>
+              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>last {r.n} <span className="opacity-70">· avg {r.pct}% of goal</span></div>
             </div>
           ))}
         </div>
