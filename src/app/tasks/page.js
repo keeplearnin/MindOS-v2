@@ -47,7 +47,7 @@ function GoogleTaskCard({ gTask, taskListId, onComplete, onImport }) {
             <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
             <div className="absolute right-0 top-8 z-20 rounded-lg py-1 min-w-[160px]" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
               {!isDone && <button className="w-full px-3 py-2 text-left text-sm flex items-center gap-2" style={{ color: 'var(--text)' }} onClick={() => { onComplete(taskListId, gTask.id); setShowMenu(false); }}><Check size={14} /> Complete</button>}
-              <button className="w-full px-3 py-2 text-left text-sm flex items-center gap-2" style={{ color: 'var(--accent)' }} onClick={() => { onImport(gTask); setShowMenu(false); }}><Download size={14} /> Import to MindOS</button>
+              <button className="w-full px-3 py-2 text-left text-sm flex items-center gap-2" style={{ color: 'var(--accent)' }} onClick={() => { onImport(gTask); setShowMenu(false); }}><Download size={14} /> Import to Keel</button>
             </div>
           </>
         )}
@@ -372,7 +372,7 @@ function TasksPage() {
 
           {filter !== 'google' && (
             <>
-              {filter === 'all_sources' && filtered.length > 0 && <h3 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>MindOS Tasks</h3>}
+              {filter === 'all_sources' && filtered.length > 0 && <h3 className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--text-muted)' }}>Keel Tasks</h3>}
               {filtered.length === 0 && filter !== 'all_sources' ? (
                 <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}><p>No tasks here yet.</p></div>
               ) : (

@@ -4,7 +4,8 @@ import { useAuth } from '@/lib/auth-context';
 import TopNav from './TopNav';
 import QuickAdd from './QuickAdd';
 import MoodFAB from './MoodFAB';
-import { Brain, LogIn, Apple, Loader2 } from 'lucide-react';
+import { LogIn, Apple, Loader2 } from 'lucide-react';
+import KeelMark from './KeelMark';
 import { useState, useCallback, useEffect } from 'react';
 
 export default function AppShell({ children }) {
@@ -44,8 +45,8 @@ export default function AppShell({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
         <div className="animate-pulse flex items-center gap-3">
-          <Brain size={32} style={{ color: 'var(--accent)' }} />
-          <span className="text-lg" style={{ color: 'var(--text-muted)' }}>Loading MindOS...</span>
+          <KeelMark size={32} bg="var(--accent)" color="#ffffff" />
+          <span className="text-lg" style={{ color: 'var(--text-muted)' }}>Loading Keel…</span>
         </div>
       </div>
     );
@@ -55,15 +56,15 @@ export default function AppShell({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)' }}>
         <div className="text-center animate-in">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6" style={{ background: 'var(--accent)', boxShadow: '0 8px 24px rgba(99,102,241,0.3)' }}>
-            <Brain size={40} color="white" />
+          <div className="flex justify-center mb-6">
+            <KeelMark size={80} bg="#ffffff" color="#172554" />
           </div>
-          <h1 className="text-3xl font-bold mb-2 text-white">MindOS</h1>
+          <h1 className="text-3xl font-bold mb-2 text-white" style={{ letterSpacing: '-0.02em' }}>Keel</h1>
           <p className="mb-1 text-lg" style={{ color: '#94a3b8' }}>
-            7 Habits + Getting Things Done
+            What keeps you steady
           </p>
           <p className="mb-8 text-sm" style={{ color: '#64748b' }}>
-            Your productivity operating system with Gmail & Calendar integration
+            Tasks, calendar, and health protocols in one place
           </p>
 
           <div className="flex flex-col items-center gap-3">
@@ -121,9 +122,9 @@ export default function AppShell({ children }) {
 
           <div className="mt-14 grid grid-cols-3 gap-8 max-w-md mx-auto">
             {[
-              { emoji: '🎯', label: 'Eisenhower Matrix' },
-              { emoji: '📥', label: 'GTD Inbox Processing' },
-              { emoji: '📧', label: 'Email → Tasks' },
+              { emoji: '🎯', label: 'Tasks & Priorities' },
+              { emoji: '🧬', label: 'Health Protocol' },
+              { emoji: '📥', label: 'Inbox → Tasks' },
             ].map(item => (
               <div key={item.label} className="text-center">
                 <div className="text-2xl mb-2">{item.emoji}</div>

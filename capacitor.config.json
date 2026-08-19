@@ -1,6 +1,6 @@
 {
   "appId": "com.keeplearnin.mindos",
-  "appName": "MindOS",
+  "appName": "Keel",
   "webDir": "public",
   "server": {
     "url": "https://mindos-v2.vercel.app",
