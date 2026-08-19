@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import AppShell from '@/components/AppShell';
+import Link from 'next/link';
+import { DAILY_GOAL, countHabits, todayISO, addDays } from '@/lib/health-tracker-data';
 import { useAuth } from '@/lib/auth-context';
-import { useTasks, useRoles, createTask } from '@/lib/hooks';
+import { useTasks, useRoles, createTask, useHealthLogs } from '@/lib/hooks';
 import { fetchEvents } from '@/lib/calendar';
 import { getSupabase } from '@/lib/supabase-browser';
 import {
@@ -67,6 +69,7 @@ function JournalSection({ user }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showAllPrompts, setShowAllPrompts] = useState(false);
   const [content, setContent] = useState({ ...EMPTY_CONTENT });
   const [mood, setMood] = useState(null);
   const [rating, setRating] = useState(0);
@@ -163,20 +166,50 @@ function JournalSection({ user }) {
                 </div>
               </div>
 
-              {/* Journal Sections */}
-              {JOURNAL_SECTIONS.map(section => (
-                <div key={section.key} className="mb-3">
-                  <div className="flex items-center justify-between mb-1.5 px-1">
-                    <label className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-                      <span>{section.icon}</span> {section.title}
-                    </label>
-                    <VoiceMic onAppend={(t) => handleContentChange(section.key, (content[section.key] || '') + (content[section.key] ? ' ' : '') + t)} mode="append" size={14} />
+              {/* One prompt that fits the time of day; the rest stay one tap away.
+                  Five textareas every day was more than anyone sustains, but the
+                  older entries still need to be reachable, so nothing is removed. */}
+              {(() => {
+                const primaryKey = new Date().getHours() < 12 ? 'morning_intentions' : 'wins';
+                const primary = JOURNAL_SECTIONS.find(x => x.key === primaryKey) || JOURNAL_SECTIONS[0];
+                const others = JOURNAL_SECTIONS.filter(x => x.key !== primary.key);
+                const filledOthers = others.filter(x => (content[x.key] || '').trim()).length;
+
+                const Prompt = (section) => (
+                  <div key={section.key} className="mb-3">
+                    <div className="flex items-center justify-between mb-1.5 px-1">
+                      <label className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+                        <span>{section.icon}</span> {section.title}
+                      </label>
+                      <VoiceMic onAppend={(t) => handleContentChange(section.key, (content[section.key] || '') + (content[section.key] ? ' ' : '') + t)} mode="append" size={14} />
+                    </div>
+                    <textarea className="input" rows={section.rows} placeholder={section.placeholder}
+                      value={content[section.key] || ''} onChange={e => handleContentChange(section.key, e.target.value)}
+                      style={{ resize: 'vertical', width: '100%', background: 'var(--bg-card)', borderRadius: 10 }} />
                   </div>
-                  <textarea className="input" rows={section.rows} placeholder={section.placeholder}
-                    value={content[section.key] || ''} onChange={e => handleContentChange(section.key, e.target.value)}
-                    style={{ resize: 'vertical', width: '100%', background: 'var(--bg-card)', borderRadius: 10 }} />
-                </div>
-              ))}
+                );
+
+                return (
+                  <>
+                    {Prompt(primary)}
+                    <button
+                      onClick={() => setShowAllPrompts(v => !v)}
+                      className="text-sm font-medium flex items-center gap-1.5"
+                      style={{ color: 'var(--accent)', background: 'none', border: 0, padding: '2px 4px', cursor: 'pointer' }}
+                    >
+                      {showAllPrompts ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      {showAllPrompts ? 'Fewer prompts' : 'More prompts'}
+                      {!showAllPrompts && filledOthers > 0 && (
+                        <span className="text-xs px-1.5 py-0.5 rounded-full"
+                          style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                          {filledOthers} filled
+                        </span>
+                      )}
+                    </button>
+                    {showAllPrompts && <div className="mt-3">{others.map(Prompt)}</div>}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>
@@ -285,6 +318,8 @@ function TodayPage() {
           {format(today, 'EEEE, MMMM d')}
         </p>
       </div>
+
+      <DailyCheckInCard />
 
       {/* Q2 Focus for this week (from Weekly Review) */}
       {q2Focus !== null && (
@@ -422,4 +457,53 @@ function TodayPage() {
 
 export default function Home() {
   return <AppShell><TodayPage /></AppShell>;
+}
+
+// The daily habit goal, surfaced where the day actually starts. Previously this
+// lived two navigations deep in the tracker's Trends tab, which made the reward
+// quieter than the effort.
+function DailyCheckInCard() {
+  const { data: logs, loading } = useHealthLogs(120);
+  if (loading) return null;
+
+  const byDate = {};
+  for (const l of logs) byDate[l.date] = l;
+  const t = todayISO();
+  const done = countHabits(byDate[t]?.habits);
+  const goalHit = done >= DAILY_GOAL;
+
+  let streak = 0;
+  let cur = countHabits(byDate[t]?.habits) >= DAILY_GOAL ? t : addDays(t, -1);
+  while (countHabits(byDate[cur]?.habits) >= DAILY_GOAL) { streak++; cur = addDays(cur, -1); }
+
+  return (
+    <Link href="/health/tracker" className="card mb-4 block" style={{ textDecoration: 'none' }}>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold tabular-nums"
+              style={{ color: goalHit ? 'var(--success)' : 'var(--text)', letterSpacing: '-0.02em' }}>
+              {done}
+            </span>
+            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>/ {DAILY_GOAL} habits today</span>
+          </div>
+          <p className="text-xs mt-0.5" style={{ color: goalHit ? 'var(--success)' : 'var(--text-muted)' }}>
+            {goalHit
+              ? (streak > 1 ? `Goal hit · ${streak}-day streak` : 'Goal hit today')
+              : (streak > 0 ? `${DAILY_GOAL - done} to go · ${streak}-day streak on the line` : `${DAILY_GOAL - done} to go`)}
+          </p>
+        </div>
+        <div className="flex gap-1 shrink-0" style={{ width: 132 }}>
+          {Array.from({ length: DAILY_GOAL }, (_, i) => (
+            <span key={i} className="flex-1 rounded-full" style={{
+              height: 7,
+              background: i < Math.min(done, DAILY_GOAL)
+                ? (goalHit ? 'var(--success)' : 'var(--accent)')
+                : 'var(--surface)',
+            }} />
+          ))}
+        </div>
+      </div>
+    </Link>
+  );
 }

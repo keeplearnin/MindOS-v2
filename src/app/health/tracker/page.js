@@ -14,7 +14,8 @@ import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Upload, Pencil, Check,
   UtensilsCrossed, ChevronDown, ChevronUp, Flame, Target,
 } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { hapticSuccess } from '@/lib/native';
 
 const CHRONO_AGE_KEY = 'fh-tracker-chrono-age';
 const TABS = ['Today', 'Plan', 'Markers', 'Trends'];
@@ -313,11 +314,36 @@ function DayEditor({ date, log, meal }) {
 
   const done = countHabits(habits);
   const goalHit = done >= DAILY_GOAL;
+  const [justHit, setJustHit] = useState(false);
+  const wasHit = useRef(null);
+
+  useEffect(() => {
+    if (wasHit.current === null) { wasHit.current = goalHit; return; }
+    if (goalHit && !wasHit.current) {
+      hapticSuccess();
+      setJustHit(true);
+      const t = setTimeout(() => setJustHit(false), 2200);
+      wasHit.current = goalHit;
+      return () => clearTimeout(t);
+    }
+    wasHit.current = goalHit;
+  }, [goalHit]);
   const groups = [...new Set(HABITS.map(h => h.grp))];
 
   return (
     <div className="space-y-4">
-      <div className="card">
+      <div className="card" style={{
+        position: 'relative', overflow: 'hidden',
+        borderColor: justHit ? 'var(--success)' : undefined,
+        transition: 'border-color .4s',
+      }}>
+        {justHit && (
+          <div aria-hidden="true" style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none',
+            background: 'radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--success) 34%, transparent), transparent 62%)',
+            animation: 'keel-celebrate 2.2s ease-out forwards',
+          }} />
+        )}
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
             <Target size={14} /> Daily goal
@@ -335,7 +361,9 @@ function DayEditor({ date, log, meal }) {
           <span className="text-sm" style={{ color: 'var(--text-muted)' }}>/ {DAILY_GOAL} habits</span>
           <span className="text-xs ml-auto text-right" style={{ color: goalHit ? 'var(--success)' : 'var(--text-muted)' }}>
             {goalHit
-              ? (done > DAILY_GOAL ? `Goal hit · +${done - DAILY_GOAL} bonus` : 'Goal hit')
+              ? (justHit
+                  ? 'Goal hit for today'
+                  : (done > DAILY_GOAL ? `Goal hit · +${done - DAILY_GOAL} bonus` : 'Goal hit'))
               : `${DAILY_GOAL - done} to go`}
           </span>
         </div>
