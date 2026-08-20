@@ -2,8 +2,13 @@
 
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/lib/auth-context';
-import { useState } from 'react';
-import { AlertTriangle, Loader2, Mail, FileText, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { isNative } from '@/lib/native';
+import {
+  getReminderPrefs, setReminderPrefs, requestReminderPermission,
+  scheduleDailyReminder, cancelDailyReminder, DEFAULT_REMINDER_TIME,
+} from '@/lib/reminders';
+import { AlertTriangle, Loader2, Mail, FileText, Trash2, Bell } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
@@ -50,6 +55,8 @@ function SettingsContent() {
           <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{user.user_metadata.full_name}</div>
         )}
       </section>
+
+      <ReminderSettings />
 
       <section className="card mb-4">
         <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Legal</h2>
@@ -119,5 +126,83 @@ function SettingsContent() {
         )}
       </section>
     </div>
+  );
+}
+
+function ReminderSettings() {
+  const [enabled, setEnabled] = useState(false);
+  const [time, setTime] = useState(DEFAULT_REMINDER_TIME);
+  const [status, setStatus] = useState(null);
+  const [native, setNative] = useState(false);
+
+  useEffect(() => {
+    const prefs = getReminderPrefs();
+    setEnabled(prefs.enabled);
+    setTime(prefs.time);
+    setNative(isNative());
+  }, []);
+
+  const apply = async (nextEnabled, nextTime) => {
+    setEnabled(nextEnabled);
+    setTime(nextTime);
+    setReminderPrefs({ enabled: nextEnabled, time: nextTime });
+
+    if (!nextEnabled) {
+      await cancelDailyReminder();
+      setStatus(null);
+      return;
+    }
+    const perm = await requestReminderPermission();
+    if (perm === 'unsupported') {
+      setStatus('Saved. Reminders are delivered by the iOS app — install it to receive them.');
+      return;
+    }
+    if (perm !== 'granted') {
+      setStatus('Notifications are blocked. Enable them for Keel in iOS Settings.');
+      return;
+    }
+    const ok = await scheduleDailyReminder(nextTime);
+    setStatus(ok ? `Reminder set for ${nextTime} every day.` : 'Could not schedule the reminder.');
+  };
+
+  return (
+    <section className="card mb-4">
+      <h2 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+        <Bell size={15} /> Daily reminder
+      </h2>
+      <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+        A nudge to log your habits before the day closes.
+      </p>
+
+      <div className="flex items-center justify-between gap-3">
+        <label className="flex items-center gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={e => apply(e.target.checked, time)}
+            style={{ accentColor: 'var(--accent)', width: 18, height: 18 }}
+          />
+          <span className="text-sm" style={{ color: 'var(--text)' }}>Remind me daily</span>
+        </label>
+        <input
+          type="time"
+          value={time}
+          disabled={!enabled}
+          onChange={e => apply(enabled, e.target.value)}
+          className="rounded-lg px-2.5 py-1.5 text-sm outline-none"
+          style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            color: 'var(--text)', opacity: enabled ? 1 : 0.5,
+          }}
+        />
+      </div>
+
+      {status && <p className="text-xs mt-3" style={{ color: 'var(--text-muted)' }}>{status}</p>}
+      {!native && (
+        <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+          Reminders fire from the installed iOS app, not the browser.
+        </p>
+      )}
+    </section>
   );
 }

@@ -7,6 +7,7 @@ import MoodFAB from './MoodFAB';
 import { LogIn, Apple, Loader2 } from 'lucide-react';
 import KeelMark from './KeelMark';
 import Aurora from './Aurora';
+import { syncReminderOnLaunch } from '@/lib/reminders';
 import { useState, useCallback, useEffect } from 'react';
 
 export default function AppShell({ children }) {
@@ -23,6 +24,11 @@ export default function AppShell({ children }) {
       setReviewMode(true);
     }
   }, []);
+
+  // Re-arm the daily reminder once signed in; iOS drops schedules on reinstall.
+  useEffect(() => {
+    if (user) syncReminderOnLaunch();
+  }, [user]);
 
   const handleReviewSignIn = async (e) => {
     e.preventDefault();

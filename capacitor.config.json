@@ -4,7 +4,8 @@
   "webDir": "public",
   "server": {
     "url": "https://mindos-v2.vercel.app",
-    "cleartext": false
+    "cleartext": false,
+    "errorPath": "offline.html"
   },
   "ios": {
     "contentInset": "automatic"

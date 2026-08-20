@@ -741,3 +741,13 @@ html.theme-transition *::after {
   .glass { backdrop-filter: blur(22px) saturate(180%); }
   .glass-soft { backdrop-filter: blur(14px) saturate(150%); }
 }
+
+/* Goal-hit celebration — a single sweep, then gone. */
+@keyframes keel-celebrate {
+  0%   { opacity: 0; transform: scale(0.94); }
+  18%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes keel-celebrate { 0%, 100% { opacity: 0; } 50% { opacity: 0.5; } }
+}
